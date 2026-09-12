@@ -17,9 +17,6 @@ export default function App() {
     "landing" | "patient" | "clinic"
   >("patient");
   const [showDemoAndHeader, setShowDemoAndHeader] = useState<boolean>(false);
-  const [currentView, setCurrentView] = useState<
-    "landing" | "patient" | "clinic"
-  >("clinic");
   const [queue, setQueue] = useState<Token[]>(DataStore.getQueue());
   const [doctors, setDoctors] = useState<Doctor[]>(DataStore.getDoctors());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -29,7 +26,6 @@ export default function App() {
   const [isSplitView, setIsSplitView] = useState<boolean>(false);
   const [patientTab, setPatientTab] = useState<PatientTab>("home");
   const [clinicTab, setClinicTab] = useState<ClinicTab>("dashboard");
-  const [clinicTab, setClinicTab] = useState<ClinicTab>("pharmacy_labs");
   const [snapshotTokenNumber, setSnapshotTokenNumber] = useState<string | null>(
     null,
   );
