@@ -16,7 +16,10 @@ import {
   FileText,
   Check,
 } from "lucide-react";
-import { MedicationRecord, SuggestedPharmacy } from "../../types/pharmacyLabs";
+import {
+  MedicationRecord,
+  SuggestedPharmacy,
+} from "../../../types/pharmacyLabs";
 
 interface MedicationDrawerProps {
   medication: MedicationRecord | null;

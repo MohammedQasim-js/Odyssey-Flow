@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Building2, Check, MapPin, Phone } from "lucide-react";
-import { PharmacyPartner } from "../../types/pharmacyLabs";
+import { PharmacyPartner } from "../../../types/pharmacyLabs";
 
 interface AddPharmacyModalProps {
   onClose: () => void;

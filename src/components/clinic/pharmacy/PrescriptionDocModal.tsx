@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Check,
 } from "lucide-react";
-import { PrescriptionDocument } from "../../types/pharmacyLabs";
+import { PrescriptionDocument } from "../../../types/pharmacyLabs";
 
 interface PrescriptionDocModalProps {
   prescription: PrescriptionDocument | null;

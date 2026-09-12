@@ -1,6 +1,18 @@
-export type QueueStatus = 'waiting' | 'called' | 'in_consultation' | 'completed' | 'cancelled' | 'skipped' | 'needs_review';
-export type TokenPriority = 'standard' | 'priority_stagnation' | 'senior_mdis';
-export type DoctorStatus = 'consulting' | 'reviewing_history' | 'finishing_consult' | 'preparing' | 'break';
+export type QueueStatus =
+  | "waiting"
+  | "called"
+  | "in_consultation"
+  | "completed"
+  | "cancelled"
+  | "skipped"
+  | "needs_review";
+export type TokenPriority = "standard" | "priority_stagnation" | "senior_mdis";
+export type DoctorStatus =
+  | "consulting"
+  | "reviewing_history"
+  | "finishing_consult"
+  | "preparing"
+  | "break";
 
 export interface Clinic {
   id: string;
@@ -36,7 +48,7 @@ export interface DoctorShift {
   doctorId: string;
   doctorName: string;
   specialty: string;
-  shiftName: 'Morning' | 'Afternoon' | 'Evening';
+  shiftName: "Morning" | "Afternoon" | "Evening";
   startTime: string;
   endTime: string;
   room: string;
@@ -49,13 +61,14 @@ export interface Patient {
   id: string;
   name?: string;
   fullName: string;
+  avatarUrl?: string;
   phone: string;
   maskedPhone: string;
   masked_identity_reference?: string;
-  consent_status?: 'granted' | 'pending' | 'revoked';
+  consent_status?: "granted" | "pending" | "revoked";
   hypotheticalAadhaar: string; // strictly fake/demo value e.g. "DEMO-IND-XXXX-2741"
   age: number;
-  gender: 'Female' | 'Male' | 'Other';
+  gender: "Female" | "Male" | "Other";
   bloodGroup: string;
   emergencyContact: string;
   registeredDate: string;
@@ -88,7 +101,16 @@ export interface DiagnosticEvent {
   visit_id?: string;
   date: string;
   event_date?: string;
-  eventType: 'blood_test' | 'mri' | 'ct_scan' | 'xray' | 'ultrasound' | 'endoscopy' | 'biopsy' | 'specialist_consult' | string;
+  eventType:
+    | "blood_test"
+    | "mri"
+    | "ct_scan"
+    | "xray"
+    | "ultrasound"
+    | "endoscopy"
+    | "biopsy"
+    | "specialist_consult"
+    | string;
   event_type?: string;
   specialty?: string;
   complaint?: string;
@@ -108,19 +130,19 @@ export interface DiagnosticEvent {
 export interface DiagnosticSignal {
   id: string;
   patientId: string;
-  signalType: 
-    | 'repeated_complaint' 
-    | 'specialist_transition' 
-    | 'test_redundancy' 
-    | 'hypothesis_instability' 
-    | 'note_uncertainty' 
-    | 'treatment_non_resolution'
-    | 'unresolved_duration' 
-    | 'repeated_unyielding_tests' 
-    | 'cross_specialty_loop' 
-    | 'symptom_divergence' 
-    | 'test_delay';
-  severity: 'low' | 'moderate' | 'high' | 'critical';
+  signalType:
+    | "repeated_complaint"
+    | "specialist_transition"
+    | "test_redundancy"
+    | "hypothesis_instability"
+    | "note_uncertainty"
+    | "treatment_non_resolution"
+    | "unresolved_duration"
+    | "repeated_unyielding_tests"
+    | "cross_specialty_loop"
+    | "symptom_divergence"
+    | "test_delay";
+  severity: "low" | "moderate" | "high" | "critical";
   title: string;
   description: string;
   detectedAt: string;
@@ -141,10 +163,14 @@ export interface DpsSnapshot {
   hypothesis_entropy?: number;
   treatment_nonresolution_score?: number;
   stagnation_flag?: boolean;
-  stagnation_state?: 'STAGNATION_DETECTED' | 'CONVERGING' | 'MONITORING' | 'RECOVERING';
+  stagnation_state?:
+    | "STAGNATION_DETECTED"
+    | "CONVERGING"
+    | "MONITORING"
+    | "RECOVERING";
   dps_slope?: number;
   confidence?: number | string;
-  stagnationRisk: 'optimal' | 'moderate' | 'high_stagnation' | 'critical_loop';
+  stagnationRisk: "optimal" | "moderate" | "high_stagnation" | "critical_loop";
   factors: {
     durationPenalty: number;
     inconclusiveTestPenalty: number;
@@ -152,7 +178,11 @@ export interface DpsSnapshot {
     symptomProgressionPenalty: number;
   };
   recommendation: string;
-  suggestedAction: 'standard_queue' | 'senior_consultant_review' | 'multidisciplinary_panel' | 'advanced_imaging_triage';
+  suggestedAction:
+    | "standard_queue"
+    | "senior_consultant_review"
+    | "multidisciplinary_panel"
+    | "advanced_imaging_triage";
   calculatedAt: string;
   created_at?: string;
 }
@@ -176,7 +206,15 @@ export interface Token {
   doctorName: string;
   specialty: string;
   roomNumber?: string;
-  status: QueueStatus | 'created' | 'waiting' | 'called' | 'in_treatment' | 'skipped' | 'completed' | 'cancelled';
+  status:
+    | QueueStatus
+    | "created"
+    | "waiting"
+    | "called"
+    | "in_treatment"
+    | "skipped"
+    | "completed"
+    | "cancelled";
   priority: TokenPriority | string;
   queuePosition: number;
   queue_position?: number;
@@ -195,19 +233,19 @@ export interface Token {
   updated_at?: string;
 }
 
-export type SanctuaryPulseCode = 
-  | 'CHECKIN_CONFIRMED'
-  | 'QUEUE_STABLE'
-  | 'QUEUE_MOVING'
-  | 'DOCTOR_REVIEWING'
-  | 'SLIGHT_DELAY'
-  | 'ALMOST_YOUR_TURN'
-  | 'PLEASE_REPORT'
-  | 'YOUR_TURN'
-  | 'IN_CONSULTATION'
-  | 'COMPLETED'
-  | 'DELAY'
-  | 'WAITING_FOR_PATIENT';
+export type SanctuaryPulseCode =
+  | "CHECKIN_CONFIRMED"
+  | "QUEUE_STABLE"
+  | "QUEUE_MOVING"
+  | "DOCTOR_REVIEWING"
+  | "SLIGHT_DELAY"
+  | "ALMOST_YOUR_TURN"
+  | "PLEASE_REPORT"
+  | "YOUR_TURN"
+  | "IN_CONSULTATION"
+  | "COMPLETED"
+  | "DELAY"
+  | "WAITING_FOR_PATIENT";
 
 export type SanctuaryPulseStateCode = SanctuaryPulseCode;
 
@@ -217,8 +255,8 @@ export interface SanctuaryPulseTimelineItem {
   subtitle?: string;
   label?: string;
   subtext?: string;
-  status: 'completed' | 'active' | 'upcoming';
-  state?: 'completed' | 'current' | 'upcoming';
+  status: "completed" | "active" | "upcoming";
+  state?: "completed" | "current" | "upcoming";
   time?: string;
   icon?: string;
 }
@@ -230,28 +268,43 @@ export interface SanctuaryPulseState {
   message: string;
   subtext: string;
   statusBadge: string;
-  pulseStatus: 
-    | 'checkin_confirmed'
-    | 'queue_stable'
-    | 'comfortably_on_track'
-    | 'queue_moving'
-    | 'moving_smoothly'
-    | 'doctor_reviewing'
-    | 'doctor_reviewing_history'
-    | 'slight_delay'
-    | 'delay_reported'
-    | 'almost_your_turn'
-    | 'turn_getting_close'
-    | 'please_report'
-    | 'start_heading_to_clinic'
-    | 'your_turn'
-    | 'you_are_next'
-    | 'doctor_ready'
-    | 'in_consultation'
-    | 'visit_completed';
+  pulseStatus:
+    | "checkin_confirmed"
+    | "queue_stable"
+    | "comfortably_on_track"
+    | "queue_moving"
+    | "moving_smoothly"
+    | "doctor_reviewing"
+    | "doctor_reviewing_history"
+    | "slight_delay"
+    | "delay_reported"
+    | "almost_your_turn"
+    | "turn_getting_close"
+    | "please_report"
+    | "start_heading_to_clinic"
+    | "your_turn"
+    | "you_are_next"
+    | "doctor_ready"
+    | "in_consultation"
+    | "visit_completed";
   emotionalPacing: string;
-  stage: 'waiting' | 'prep' | 'approaching' | 'imminent' | 'now' | 'consulting' | 'done';
-  badgeColor: 'emerald' | 'teal' | 'sky' | 'amber' | 'emerald_bright' | 'rose' | 'indigo' | 'purple';
+  stage:
+    | "waiting"
+    | "prep"
+    | "approaching"
+    | "imminent"
+    | "now"
+    | "consulting"
+    | "done";
+  badgeColor:
+    | "emerald"
+    | "teal"
+    | "sky"
+    | "amber"
+    | "emerald_bright"
+    | "rose"
+    | "indigo"
+    | "purple";
   estimatedMinutesRemaining: number;
   patientsAhead: number;
   queuePositionLabel: string;
@@ -259,10 +312,10 @@ export interface SanctuaryPulseState {
   progressPercent: number; // 0 - 100
   doctorCurrentActivity: string;
   arrivalAlert?: {
-    type: 'heading' | 'next' | 'report_reception' | 'enter_room' | 'delay';
+    type: "heading" | "next" | "report_reception" | "enter_room" | "delay";
     title: string;
     message: string;
-    urgency?: 'info' | 'warning' | 'urgent';
+    urgency?: "info" | "warning" | "urgent";
     cta?: string;
     actionLabel?: string;
   };
@@ -284,7 +337,7 @@ export interface Visit {
   reason: string;
   chiefComplaint?: string;
   outcome?: string;
-  status: 'completed' | 'scheduled' | 'cancelled' | 'in_progress' | 'waiting';
+  status: "completed" | "scheduled" | "cancelled" | "in_progress" | "waiting";
   diagnosis?: string;
   notes: string;
   prescriptionSummary?: string;
@@ -305,8 +358,8 @@ export interface Appointment {
   clinicAddress: string;
   date: string;
   time: string;
-  type: 'in_person' | 'video_call';
-  status: 'upcoming' | 'completed' | 'cancelled' | 'rescheduled';
+  type: "in_person" | "video_call";
+  status: "upcoming" | "completed" | "cancelled" | "rescheduled";
   symptoms?: string;
   roomNumber?: string;
   fee?: number;
@@ -323,8 +376,21 @@ export interface Referral {
   fromDoctorName: string;
   toSpecialty: string;
   reason: string;
-  priority: 'urgent' | 'routine' | 'multidisciplinary' | 'Recommended' | 'recommended' | string;
-  status: 'suggested' | 'approved' | 'scheduled' | 'completed' | 'Pending' | 'pending' | string;
+  priority:
+    | "urgent"
+    | "routine"
+    | "multidisciplinary"
+    | "Recommended"
+    | "recommended"
+    | string;
+  status:
+    | "suggested"
+    | "approved"
+    | "scheduled"
+    | "completed"
+    | "Pending"
+    | "pending"
+    | string;
   referralToken?: string;
   date: string;
   clinicalNotes: string;
@@ -354,7 +420,7 @@ export interface BillingRecord {
     amount: number;
   }[];
   totalAmount: number;
-  status: 'paid' | 'pending' | 'insurance_processing';
+  status: "paid" | "pending" | "insurance_processing";
   paymentMethod?: string;
   created_at?: string;
 }
@@ -379,7 +445,15 @@ export interface NotificationRecord {
 export interface AuditLog {
   id: string;
   action: string;
-  entityType: 'queue' | 'patient' | 'token' | 'dps' | 'doctor' | 'billing' | 'settings' | 'referral';
+  entityType:
+    | "queue"
+    | "patient"
+    | "token"
+    | "dps"
+    | "doctor"
+    | "billing"
+    | "settings"
+    | "referral";
   entityId: string;
   performedBy: string;
   timestamp: string;
@@ -396,7 +470,7 @@ export interface ClinicSettings {
   defaultConsultationMin: number;
   extendedConsultationMin: number;
   seniorReviewThresholdDPS: number;
-  queuePolicy: 'dps_stagnation_priority' | 'strict_fifo' | 'acuity_first';
+  queuePolicy: "dps_stagnation_priority" | "strict_fifo" | "acuity_first";
   notificationSMS: boolean;
   pulseEmpatheticPacing: boolean;
   autoCallEnabled: boolean;

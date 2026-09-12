@@ -13,8 +13,8 @@ import {
 import {
   InvestigationRecord,
   InvestigationCategory,
-} from "../../types/pharmacyLabs";
-import { Patient } from "../../types";
+} from "../../../types/pharmacyLabs";
+import { Patient } from "../../../types";
 
 interface OrderInvestigationModalProps {
   patients: Patient[];

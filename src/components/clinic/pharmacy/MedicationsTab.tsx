@@ -11,7 +11,7 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import { MedicationRecord } from "../../types/pharmacyLabs";
+import { MedicationRecord } from "../../../types/pharmacyLabs";
 
 interface MedicationsTabProps {
   medications: MedicationRecord[];

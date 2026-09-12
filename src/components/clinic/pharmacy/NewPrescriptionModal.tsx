@@ -15,8 +15,8 @@ import {
 import {
   MedicationRecord,
   PrescriptionDocument,
-} from "../../types/pharmacyLabs";
-import { Patient } from "../../types";
+} from "../../../types/pharmacyLabs";
+import { Patient } from "../../../types";
 
 interface NewPrescriptionModalProps {
   patients: Patient[];

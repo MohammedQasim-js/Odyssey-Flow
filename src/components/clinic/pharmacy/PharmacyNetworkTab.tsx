@@ -11,7 +11,7 @@ import {
   Check,
   ExternalLink,
 } from "lucide-react";
-import { PharmacyPartner } from "../../types/pharmacyLabs";
+import { PharmacyPartner } from "../../../types/pharmacyLabs";
 
 interface PharmacyNetworkTabProps {
   pharmacies: PharmacyPartner[];

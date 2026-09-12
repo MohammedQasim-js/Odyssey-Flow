@@ -1,65 +1,99 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Pill, Activity, FileText, Building2, Search, Filter, 
-  Download, Plus, ChevronDown, CheckCircle2, Clock, AlertTriangle, 
-  RefreshCw, Layers, ArrowRight, X, Check, ShieldCheck
-} from 'lucide-react';
-import { DataStore } from '../../services/dataStore';
-import { PharmacyLabsStore } from '../../services/pharmacyLabsData';
-import { 
-  MedicationRecord, 
-  InvestigationRecord, 
-  PrescriptionDocument, 
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Pill,
+  Activity,
+  FileText,
+  Building2,
+  Search,
+  Filter,
+  Download,
+  Plus,
+  ChevronDown,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  RefreshCw,
+  Layers,
+  ArrowRight,
+  X,
+  Check,
+  ShieldCheck,
+} from "lucide-react";
+import { DataStore } from "../../services/dataStore";
+import { PharmacyLabsStore } from "../../services/pharmacyLabsData";
+import {
+  MedicationRecord,
+  InvestigationRecord,
+  PrescriptionDocument,
   PharmacyPartner,
-  SuggestedPharmacy 
-} from '../../types/pharmacyLabs';
+  SuggestedPharmacy,
+} from "../../types/pharmacyLabs";
 
-import { MedicationsTab } from './pharmacy/MedicationsTab';
-import { MedicationDrawer } from './pharmacy/MedicationDrawer';
-import { LabsTab } from './pharmacy/LabsTab';
-import { InvestigationDrawer } from './pharmacy/InvestigationDrawer';
-import { PrescriptionsTab } from './pharmacy/PrescriptionsTab';
-import { PrescriptionDocModal } from './pharmacy/PrescriptionDocModal';
-import { PharmacyNetworkTab } from './pharmacy/PharmacyNetworkTab';
-import { NewPrescriptionModal } from './pharmacy/NewPrescriptionModal';
-import { OrderInvestigationModal } from './pharmacy/OrderInvestigationModal';
-import { UploadResultModal } from './pharmacy/UploadResultModal';
-import { AddPharmacyModal } from './pharmacy/AddPharmacyModal';
+import { MedicationsTab } from "./pharmacy/MedicationsTab";
+import { MedicationDrawer } from "./pharmacy/MedicationDrawer";
+import { LabsTab } from "./pharmacy/LabsTab";
+import { InvestigationDrawer } from "./pharmacy/InvestigationDrawer";
+import { PrescriptionsTab } from "./pharmacy/PrescriptionsTab";
+import { PrescriptionDocModal } from "./pharmacy/PrescriptionDocModal";
+import { PharmacyNetworkTab } from "./pharmacy/PharmacyNetworkTab";
+import { NewPrescriptionModal } from "./pharmacy/NewPrescriptionModal";
+import { OrderInvestigationModal } from "./pharmacy/OrderInvestigationModal";
+import { UploadResultModal } from "./pharmacy/UploadResultModal";
+import { AddPharmacyModal } from "./pharmacy/AddPharmacyModal";
 
-export type PharmacyLabsTab = 'medications' | 'labs' | 'prescriptions' | 'network';
+export type PharmacyLabsTab =
+  | "medications"
+  | "labs"
+  | "prescriptions"
+  | "network";
 
 export const PharmacyLabsView: React.FC = () => {
   // Navigation State - Default: 'medications'
-  const [activeTab, setActiveTab] = useState<PharmacyLabsTab>('medications');
+  const [activeTab, setActiveTab] = useState<PharmacyLabsTab>("medications");
 
   // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
 
   // Global Search & Filter
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
-  const [isQuickActionMenuOpen, setIsQuickActionMenuOpen] = useState<boolean>(false);
+  const [isQuickActionMenuOpen, setIsQuickActionMenuOpen] =
+    useState<boolean>(false);
 
   // Store data state
   const [medications, setMedications] = useState<MedicationRecord[]>([]);
-  const [investigations, setInvestigations] = useState<InvestigationRecord[]>([]);
-  const [prescriptions, setPrescriptions] = useState<PrescriptionDocument[]>([]);
+  const [investigations, setInvestigations] = useState<InvestigationRecord[]>(
+    [],
+  );
+  const [prescriptions, setPrescriptions] = useState<PrescriptionDocument[]>(
+    [],
+  );
   const [pharmacies, setPharmacies] = useState<PharmacyPartner[]>([]);
-  const [suggestedPharmacies, setSuggestedPharmacies] = useState<SuggestedPharmacy[]>([]);
+  const [suggestedPharmacies, setSuggestedPharmacies] = useState<
+    SuggestedPharmacy[]
+  >([]);
 
   // Drawers & Modals State
-  const [selectedMedication, setSelectedMedication] = useState<MedicationRecord | null>(null);
-  const [selectedInvestigation, setSelectedInvestigation] = useState<InvestigationRecord | null>(null);
-  const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionDocument | null>(null);
+  const [selectedMedication, setSelectedMedication] =
+    useState<MedicationRecord | null>(null);
+  const [selectedInvestigation, setSelectedInvestigation] =
+    useState<InvestigationRecord | null>(null);
+  const [selectedPrescription, setSelectedPrescription] =
+    useState<PrescriptionDocument | null>(null);
 
   const [isNewRxModalOpen, setIsNewRxModalOpen] = useState<boolean>(false);
-  const [isOrderInvModalOpen, setIsOrderInvModalOpen] = useState<boolean>(false);
-  const [isUploadResultModalOpen, setIsUploadResultModalOpen] = useState<boolean>(false);
-  const [isAddPharmacyModalOpen, setIsAddPharmacyModalOpen] = useState<boolean>(false);
+  const [isOrderInvModalOpen, setIsOrderInvModalOpen] =
+    useState<boolean>(false);
+  const [isUploadResultModalOpen, setIsUploadResultModalOpen] =
+    useState<boolean>(false);
+  const [isAddPharmacyModalOpen, setIsAddPharmacyModalOpen] =
+    useState<boolean>(false);
 
-  const [notificationToast, setNotificationToast] = useState<string | null>(null);
+  const [notificationToast, setNotificationToast] = useState<string | null>(
+    null,
+  );
 
   const patients = useMemo(() => DataStore.getPatients(), []);
 
@@ -99,7 +133,10 @@ export const PharmacyLabsView: React.FC = () => {
   }, [investigations]);
 
   // Handlers
-  const handleUpdateMedicationStatus = (id: string, status: MedicationRecord['status']) => {
+  const handleUpdateMedicationStatus = (
+    id: string,
+    status: MedicationRecord["status"],
+  ) => {
     const updated = PharmacyLabsStore.updateMedicationStatus(id, status);
     setMedications([...updated]);
     if (selectedMedication && selectedMedication.id === id) {
@@ -109,21 +146,30 @@ export const PharmacyLabsView: React.FC = () => {
   };
 
   const handleReviewInvestigation = (id: string, notes: string) => {
-    const updated = PharmacyLabsStore.reviewInvestigation(id, 'Dr. A. Sharma', notes);
+    const updated = PharmacyLabsStore.reviewInvestigation(
+      id,
+      "Dr. A. Sharma",
+      notes,
+    );
     setInvestigations([...updated]);
     if (selectedInvestigation && selectedInvestigation.id === id) {
       setSelectedInvestigation({
         ...selectedInvestigation,
-        status: 'Reviewed',
-        resultStatus: 'Reviewed',
-        reviewedBy: 'Dr. A. Sharma',
+        status: "Reviewed",
+        resultStatus: "Reviewed",
+        reviewedBy: "Dr. A. Sharma",
         doctorReviewNote: notes,
       });
     }
-    showToast('Investigation reviewed and synchronized with patient longitudinal journey.');
+    showToast(
+      "Investigation reviewed and synchronized with patient longitudinal journey.",
+    );
   };
 
-  const handleIssuePrescription = (newRecord: MedicationRecord, newDoc: PrescriptionDocument) => {
+  const handleIssuePrescription = (
+    newRecord: MedicationRecord,
+    newDoc: PrescriptionDocument,
+  ) => {
     PharmacyLabsStore.addMedication(newRecord);
     PharmacyLabsStore.addPrescription(newDoc);
     setMedications([...PharmacyLabsStore.getMedications()]);
@@ -140,7 +186,9 @@ export const PharmacyLabsView: React.FC = () => {
   const handleUploadResult = (id: string, summary: string) => {
     const updated = PharmacyLabsStore.updateInvestigationResult(id, summary);
     setInvestigations([...updated]);
-    showToast('Diagnostic findings uploaded. Report ready for clinician review.');
+    showToast(
+      "Diagnostic findings uploaded. Report ready for clinician review.",
+    );
   };
 
   const handleAddPharmacy = (partner: PharmacyPartner) => {
@@ -150,36 +198,50 @@ export const PharmacyLabsView: React.FC = () => {
   };
 
   const handleOpenPrescriptionDocumentById = (rxId: string) => {
-    const doc = prescriptions.find(p => p.id === rxId) || prescriptions[0];
+    const doc = prescriptions.find((p) => p.id === rxId) || prescriptions[0];
     if (doc) {
       setSelectedPrescription(doc);
     }
   };
 
   const handleExportData = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + 
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
       "Record ID,Patient,Item,Type,Status\n" +
-      medications.map(m => `"${m.prescriptionId}","${m.patientName}","${m.medicationName}","Medication","${m.status}"`).join("\n") + "\n" +
-      investigations.map(i => `"${i.sampleId}","${i.patientName}","${i.investigationName}","Investigation","${i.status}"`).join("\n");
+      medications
+        .map(
+          (m) =>
+            `"${m.prescriptionId}","${m.patientName}","${m.medicationName}","Medication","${m.status}"`,
+        )
+        .join("\n") +
+      "\n" +
+      investigations
+        .map(
+          (i) =>
+            `"${i.sampleId}","${i.patientName}","${i.investigationName}","Investigation","${i.status}"`,
+        )
+        .join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `odyssey_pharmacy_labs_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute(
+      "download",
+      `odyssey_pharmacy_labs_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Clinical operations report exported as CSV.');
+    showToast("Clinical operations report exported as CSV.");
   };
 
   return (
     <div className="space-y-6">
-      
       {/* Toast Notification Banner */}
       {notificationToast && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-stone-900 text-white rounded-2xl shadow-xl flex items-center space-x-3 text-xs border border-stone-800 animate-in slide-in-from-bottom-3 duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="font-medium">{notificationToast}</span>
-          <button 
+          <button
             onClick={() => setNotificationToast(null)}
             className="text-stone-400 hover:text-white ml-2"
           >
@@ -191,7 +253,6 @@ export const PharmacyLabsView: React.FC = () => {
       {/* 1. PAGE HEADER */}
       <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          
           {/* Title & Subtitle */}
           <div>
             <div className="flex items-center space-x-2">
@@ -204,13 +265,13 @@ export const PharmacyLabsView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-stone-500 mt-1">
-              Manage prescriptions, medication fulfillment, investigations, and patient results.
+              Manage prescriptions, medication fulfillment, investigations, and
+              patient results.
             </p>
           </div>
 
           {/* Right Controls: Search, Filter, Export, "+ New" Quick Actions */}
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-            
             {/* Search Input */}
             <div className="relative flex-1 sm:flex-initial">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
@@ -223,7 +284,7 @@ export const PharmacyLabsView: React.FC = () => {
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => setSearchQuery("")}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -237,13 +298,13 @@ export const PharmacyLabsView: React.FC = () => {
                 type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition-colors ${
-                  statusFilter !== 'all' 
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
-                    : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
+                  statusFilter !== "all"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                    : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
                 }`}
               >
                 <Filter className="w-3.5 h-3.5 text-stone-500" />
-                <span>{statusFilter === 'all' ? 'Filter' : statusFilter}</span>
+                <span>{statusFilter === "all" ? "Filter" : statusFilter}</span>
                 <ChevronDown className="w-3 h-3 text-stone-400" />
               </button>
 
@@ -252,7 +313,16 @@ export const PharmacyLabsView: React.FC = () => {
                   <div className="px-2.5 py-1 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
                     Filter by Status
                   </div>
-                  {['all', 'Prescribed', 'Dispensing', 'Dispensed', 'Partially Dispensed', 'Report Ready', 'Reviewed', 'Refill Due'].map(opt => (
+                  {[
+                    "all",
+                    "Prescribed",
+                    "Dispensing",
+                    "Dispensed",
+                    "Partially Dispensed",
+                    "Report Ready",
+                    "Reviewed",
+                    "Refill Due",
+                  ].map((opt) => (
                     <button
                       key={opt}
                       onClick={() => {
@@ -260,11 +330,15 @@ export const PharmacyLabsView: React.FC = () => {
                         setIsFilterOpen(false);
                       }}
                       className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between ${
-                        statusFilter === opt ? 'bg-stone-100 font-bold text-stone-900' : 'text-stone-700 hover:bg-stone-50'
+                        statusFilter === opt
+                          ? "bg-stone-100 font-bold text-stone-900"
+                          : "text-stone-700 hover:bg-stone-50"
                       }`}
                     >
-                      <span>{opt === 'all' ? 'All Statuses' : opt}</span>
-                      {statusFilter === opt && <Check className="w-3.5 h-3.5 text-emerald-700" />}
+                      <span>{opt === "all" ? "All Statuses" : opt}</span>
+                      {statusFilter === opt && (
+                        <Check className="w-3.5 h-3.5 text-emerald-700" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -345,15 +419,12 @@ export const PharmacyLabsView: React.FC = () => {
                 </div>
               )}
             </div>
-
           </div>
-
         </div>
       </div>
 
       {/* 2. SUMMARY KPI ROW (5 compact metrics) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        
         {/* Metric 1: Active Prescriptions */}
         <div className="bg-white p-4 rounded-3xl border border-stone-200/80 shadow-2xs">
           <div className="flex items-center justify-between">
@@ -458,91 +529,106 @@ export const PharmacyLabsView: React.FC = () => {
             Course nearing completion
           </span>
         </div>
-
       </div>
 
       {/* 3. SEGMENTED NAVIGATION */}
       <div className="bg-white rounded-2xl p-1.5 border border-stone-200/80 shadow-2xs flex items-center justify-between overflow-x-auto">
         <div className="flex items-center space-x-1 min-w-max">
-          
           <button
             type="button"
-            onClick={() => setActiveTab('medications')}
+            onClick={() => setActiveTab("medications")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'medications'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              activeTab === "medications"
+                ? "bg-stone-900 text-white shadow-xs"
+                : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
             }`}
           >
             <Pill className="w-3.5 h-3.5" />
             <span>Medications</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-              activeTab === 'medications' ? 'bg-stone-800 text-stone-200' : 'bg-stone-100 text-stone-600'
-            }`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                activeTab === "medications"
+                  ? "bg-stone-800 text-stone-200"
+                  : "bg-stone-100 text-stone-600"
+              }`}
+            >
               {medications.length}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('labs')}
+            onClick={() => setActiveTab("labs")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'labs'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              activeTab === "labs"
+                ? "bg-stone-900 text-white shadow-xs"
+                : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
             <span>Lab &amp; Investigations</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-              activeTab === 'labs' ? 'bg-stone-800 text-stone-200' : 'bg-stone-100 text-stone-600'
-            }`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                activeTab === "labs"
+                  ? "bg-stone-800 text-stone-200"
+                  : "bg-stone-100 text-stone-600"
+              }`}
+            >
               {investigations.length}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('prescriptions')}
+            onClick={() => setActiveTab("prescriptions")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'prescriptions'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              activeTab === "prescriptions"
+                ? "bg-stone-900 text-white shadow-xs"
+                : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Prescriptions</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-              activeTab === 'prescriptions' ? 'bg-stone-800 text-stone-200' : 'bg-stone-100 text-stone-600'
-            }`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                activeTab === "prescriptions"
+                  ? "bg-stone-800 text-stone-200"
+                  : "bg-stone-100 text-stone-600"
+              }`}
+            >
               {prescriptions.length}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('network')}
+            onClick={() => setActiveTab("network")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'network'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              activeTab === "network"
+                ? "bg-stone-900 text-white shadow-xs"
+                : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
             <span>Pharmacy Network</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-              activeTab === 'network' ? 'bg-stone-800 text-stone-200' : 'bg-stone-100 text-stone-600'
-            }`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                activeTab === "network"
+                  ? "bg-stone-800 text-stone-200"
+                  : "bg-stone-100 text-stone-600"
+              }`}
+            >
               {pharmacies.length}
             </span>
           </button>
-
         </div>
 
         <div className="hidden lg:flex items-center space-x-1.5 px-3 py-1 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-500">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
           <span>Longitudinal Linkage:</span>
-          <strong className="text-stone-800">Consultation → Rx → Diagnostics → Patient Journey</strong>
+          <strong className="text-stone-800">
+            Consultation → Rx → Diagnostics → Patient Journey
+          </strong>
         </div>
       </div>
 
@@ -552,9 +638,12 @@ export const PharmacyLabsView: React.FC = () => {
           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
             <AlertTriangle className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-bold text-stone-900">Unable to load medication records</h3>
+          <h3 className="text-sm font-bold text-stone-900">
+            Unable to load medication records
+          </h3>
           <p className="text-xs text-stone-500 max-w-sm mx-auto">
-            An error occurred while loading clinical records. Please retry to synchronize with the local data store.
+            An error occurred while loading clinical records. Please retry to
+            synchronize with the local data store.
           </p>
           <button
             onClick={loadData}
@@ -575,7 +664,7 @@ export const PharmacyLabsView: React.FC = () => {
       ) : (
         <div>
           {/* TAB 1: MEDICATIONS */}
-          {activeTab === 'medications' && (
+          {activeTab === "medications" && (
             <MedicationsTab
               medications={medications}
               onSelectMedication={(med) => setSelectedMedication(med)}
@@ -585,7 +674,7 @@ export const PharmacyLabsView: React.FC = () => {
           )}
 
           {/* TAB 2: LAB & INVESTIGATIONS */}
-          {activeTab === 'labs' && (
+          {activeTab === "labs" && (
             <LabsTab
               investigations={investigations}
               onSelectInvestigation={(inv) => setSelectedInvestigation(inv)}
@@ -596,7 +685,7 @@ export const PharmacyLabsView: React.FC = () => {
           )}
 
           {/* TAB 3: PRESCRIPTIONS */}
-          {activeTab === 'prescriptions' && (
+          {activeTab === "prescriptions" && (
             <PrescriptionsTab
               prescriptions={prescriptions}
               onSelectPrescription={(doc) => setSelectedPrescription(doc)}
@@ -606,7 +695,7 @@ export const PharmacyLabsView: React.FC = () => {
           )}
 
           {/* TAB 4: PHARMACY NETWORK */}
-          {activeTab === 'network' && (
+          {activeTab === "network" && (
             <PharmacyNetworkTab
               pharmacies={pharmacies}
               onOpenAddModal={() => setIsAddPharmacyModalOpen(true)}
@@ -680,7 +769,6 @@ export const PharmacyLabsView: React.FC = () => {
           onAddPharmacy={handleAddPharmacy}
         />
       )}
-
     </div>
   );
 };

@@ -13,7 +13,7 @@ import {
   Stethoscope,
   ChevronRight,
 } from "lucide-react";
-import { InvestigationRecord } from "../../types/pharmacyLabs";
+import { InvestigationRecord } from "../../../types/pharmacyLabs";
 
 interface InvestigationDrawerProps {
   investigation: InvestigationRecord | null;

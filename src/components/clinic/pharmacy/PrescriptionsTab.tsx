@@ -8,7 +8,7 @@ import {
   Printer,
   Download,
 } from "lucide-react";
-import { PrescriptionDocument } from "../../types/pharmacyLabs";
+import { PrescriptionDocument } from "../../../types/pharmacyLabs";
 
 interface PrescriptionsTabProps {
   prescriptions: PrescriptionDocument[];

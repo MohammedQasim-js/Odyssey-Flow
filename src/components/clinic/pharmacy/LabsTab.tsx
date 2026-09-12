@@ -14,7 +14,7 @@ import {
 import {
   InvestigationRecord,
   InvestigationCategory,
-} from "../../types/pharmacyLabs";
+} from "../../../types/pharmacyLabs";
 
 interface LabsTabProps {
   investigations: InvestigationRecord[];

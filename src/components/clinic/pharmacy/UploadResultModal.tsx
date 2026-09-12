@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, UploadCloud, Check, FileText, CheckCircle2 } from "lucide-react";
-import { InvestigationRecord } from "../../types/pharmacyLabs";
+import { InvestigationRecord } from "../../../types/pharmacyLabs";
 
 interface UploadResultModalProps {
   investigations: InvestigationRecord[];
