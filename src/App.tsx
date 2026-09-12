@@ -15,7 +15,7 @@ import { Zap, Smartphone, LayoutDashboard, ShieldCheck } from "lucide-react";
 export default function App() {
   const [currentView, setCurrentView] = useState<
     "landing" | "patient" | "clinic"
-  >("patient");
+  >("landing");
   const [showDemoAndHeader, setShowDemoAndHeader] = useState<boolean>(false);
   const [queue, setQueue] = useState<Token[]>(DataStore.getQueue());
   const [doctors, setDoctors] = useState<Doctor[]>(DataStore.getDoctors());
