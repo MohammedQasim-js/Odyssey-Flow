@@ -469,18 +469,18 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-stone-700">
+            <table className="w-full min-w-[1180px] text-left text-xs text-stone-700">
               <thead className="bg-stone-50/70 border-b border-stone-200/80 text-[10px] font-extrabold text-stone-400 uppercase tracking-wider">
                 <tr>
-                  <th className="py-3.5 px-4 pl-6">Patient</th>
-                  <th className="py-3.5 px-3">Token</th>
-                  <th className="py-3.5 px-3 hidden md:table-cell">Reason</th>
-                  <th className="py-3.5 px-3">Doctor</th>
-                  <th className="py-3.5 px-3 hidden lg:table-cell">Queue Pos</th>
-                  <th className="py-3.5 px-3">Status</th>
-                  <th className="py-3.5 px-3">Sanctuary Pulse</th>
-                  <th className="py-3.5 px-3">Clinical Signal</th>
-                  <th className="py-3.5 px-4 pr-6 text-right">Action</th>
+                  <th className="whitespace-nowrap py-4 px-4 pl-6">Patient</th>
+                  <th className="whitespace-nowrap py-4 px-3" style={{ minWidth: 76 }}>Token</th>
+                  <th className="whitespace-nowrap py-4 px-3 hidden md:table-cell">Reason</th>
+                  <th className="whitespace-nowrap py-4 px-3">Doctor</th>
+                  <th className="whitespace-nowrap py-4 px-3 hidden lg:table-cell">Queue Pos</th>
+                  <th className="whitespace-nowrap py-4 px-3">Status</th>
+                  <th className="whitespace-nowrap py-4 px-3">Sanctuary Pulse</th>
+                  <th className="whitespace-nowrap py-4 px-3">Clinical Signal</th>
+                  <th className="whitespace-nowrap py-4 px-4 pr-6 text-right">Action</th>
                 </tr>
               </thead>
 
@@ -499,7 +499,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       }`}
                     >
                       {/* 1. Patient */}
-                      <td className="py-3.5 px-4 pl-6">
+                      <td className="py-5 px-4 pl-6">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center font-bold text-stone-700 text-xs shrink-0">
                             {token.patientName.split(' ').map(n => n[0]).join('').slice(0, 2)}
@@ -516,21 +516,24 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 2. Token */}
-                      <td className="py-3.5 px-3">
-                        <span className="px-2 py-1 rounded-md bg-stone-100 text-stone-900 font-mono font-bold text-xs border border-stone-200">
+                      <td className="py-5 px-3 whitespace-nowrap" style={{ minWidth: 76 }}>
+                        <span
+                          className="inline-flex px-2 py-1 rounded-md bg-stone-100 text-stone-900 font-mono font-bold text-xs border border-stone-200"
+                          style={{ minWidth: 44, whiteSpace: 'nowrap', wordBreak: 'keep-all' }}
+                        >
                           {token.tokenNumber}
                         </span>
                       </td>
 
                       {/* 3. Reason */}
-                      <td className="py-3.5 px-3 hidden md:table-cell">
+                      <td className="py-5 px-3 hidden md:table-cell">
                         <span className="text-xs text-stone-600 block max-w-[180px] truncate">
                           {token.symptomsSummary || 'General consultation'}
                         </span>
                       </td>
 
                       {/* 4. Doctor */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
                           <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold shrink-0">
                             {token.doctorName.replace('Dr. ', '')[0]}
@@ -547,7 +550,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 5. Queue Pos */}
-                      <td className="py-3.5 px-3 hidden lg:table-cell font-mono">
+                      <td className="py-5 px-3 hidden lg:table-cell font-mono">
                         {token.status === 'in_consultation' ? (
                           <span className="text-emerald-700 font-bold">In Suite</span>
                         ) : token.status === 'called' ? (
@@ -558,12 +561,12 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 6. Status */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-5 px-3">
                         {getStatusPill(token.status)}
                       </td>
 
                       {/* 7. Sanctuary Pulse */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-5 px-3">
                         <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-800 border border-stone-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           <span className="truncate max-w-[140px]">{pulse.title}</span>
@@ -571,7 +574,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 8. Clinical Signal */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-5 px-3">
                         {signal.key !== 'no_signal' ? (
                           <button
                             type="button"
@@ -595,7 +598,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 9. Action */}
-                      <td className="py-3.5 px-4 pr-6 text-right">
+                      <td className="py-5 px-4 pr-6 text-right">
                         <button
                           type="button"
                           onClick={(e) => {
