@@ -284,17 +284,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFC] text-[#1E293B] flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
-      {/* Global Navbar */}
-      <Header
-        currentView={currentView}
-        onSelectView={(v) => {
-          setIsSplitView(false);
-          setCurrentView(v);
-        }}
-        onAdvanceQueue={handleAdvanceQueue}
-        onRebalanceDPS={handleRebalanceDPS}
-        onResetDemo={handleResetDemo}
-      />
       {/* Global Navbar & Demo Scenario Bar - Hidden for clean workspace per user request */}
       {showDemoAndHeader && (
         <>
@@ -310,13 +299,6 @@ export default function App() {
           />
 
           {/* 12-Step Scenario Orchestrator Interactive Bar */}
-          <DemoScenarioBar
-            currentStep={demoStep}
-            onSelectStep={executeDemoStep}
-            onReset={handleResetDemo}
-            isSplitView={isSplitView}
-            onToggleSplitView={() => setIsSplitView(!isSplitView)}
-          />
           <DemoScenarioBar
             currentStep={demoStep}
             onSelectStep={executeDemoStep}
