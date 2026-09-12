@@ -1,0 +1,6 @@
+{
+  "name": "Odyssey Flow",
+  "description": "Integrated Healthcare Operations and Longitudinal Diagnostic Journey Analyzer featuring Sanctuary Pulse and Zero-Friction Queue Management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
