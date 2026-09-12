@@ -435,17 +435,17 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
 
           {/* Table Container */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[1040px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 text-stone-400 font-extrabold uppercase text-[10px] tracking-wider">
-                  <th className="pb-3 pl-2">Patient</th>
-                  <th className="pb-3">Chief Complaint</th>
-                  <th className="pb-3">Doctor / Room</th>
-                  <th className="pb-3">Token</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Sanctuary Pulse</th>
-                  <th className="pb-3">Priority / DPS</th>
-                  <th className="pb-3 pr-2 text-right">Actions</th>
+                  <th className="whitespace-nowrap pb-4 pl-2">Patient</th>
+                  <th className="whitespace-nowrap pb-4">Chief Complaint</th>
+                  <th className="whitespace-nowrap pb-4">Doctor / Room</th>
+                  <th className="whitespace-nowrap pb-4" style={{ minWidth: 76 }}>Token</th>
+                  <th className="whitespace-nowrap pb-4">Status</th>
+                  <th className="whitespace-nowrap pb-4">Sanctuary Pulse</th>
+                  <th className="whitespace-nowrap pb-4">Priority / DPS</th>
+                  <th className="whitespace-nowrap pb-4 pr-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -466,7 +466,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       }`}
                     >
                       {/* Patient */}
-                      <td className="py-3 pl-2 font-semibold text-stone-900">
+                      <td className="py-5 pl-2 font-semibold text-stone-900">
                         <div 
                           onClick={() => onOpenSnapshot(t)}
                           className="cursor-pointer hover:text-emerald-700"
@@ -479,26 +479,29 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Reason */}
-                      <td className="py-3 text-stone-600 max-w-[130px] truncate" title={t.symptomsSummary}>
+                      <td className="py-5 text-stone-600 max-w-[130px] truncate" title={t.symptomsSummary}>
                         {t.symptomsSummary || 'Diagnostic Evaluation'}
                       </td>
 
                       {/* Doctor */}
-                      <td className="py-3 text-stone-800 font-medium">
+                      <td className="py-5 text-stone-800 font-medium">
                         <span className="block truncate">{t.doctorName}</span>
                         <span className="text-[10px] text-stone-400 font-mono">{t.roomNumber || 'Room 101'}</span>
                       </td>
 
                       {/* Token */}
-                      <td className="py-3 font-mono font-black text-stone-900">
-                        <span className="px-2 py-0.5 rounded-md bg-stone-100 border border-stone-200">
+                      <td className="py-5 font-mono font-black text-stone-900 whitespace-nowrap" style={{ minWidth: 76 }}>
+                        <span
+                          className="inline-flex px-2 py-1 rounded-md bg-stone-100 border border-stone-200"
+                          style={{ minWidth: 44, whiteSpace: 'nowrap', wordBreak: 'keep-all' }}
+                        >
                           {t.tokenNumber}
                         </span>
                       </td>
 
                       {/* Status */}
-                      <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      <td className="py-5 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold ${
                           isInConsult
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             : isCalled
@@ -516,7 +519,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Sanctuary Pulse */}
-                      <td className="py-3 text-[11px]">
+                      <td className="py-5 text-[11px]">
                         <span 
                           className="truncate block max-w-[130px] font-medium text-stone-700" 
                           title={`${pulse.statusBadge}: ${pulse.title}`}
@@ -529,7 +532,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Priority / DPS */}
-                      <td className="py-3">
+                      <td className="py-5">
                         {t.stagnationFlag ? (
                           <div 
                             onClick={() => onOpenSnapshot(t)}
@@ -556,7 +559,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Action Buttons */}
-                      <td className="py-3 pr-2 text-right">
+                      <td className="py-5 pr-2 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-1">
                           
                           {/* Pre-Consultation Snapshot */}
