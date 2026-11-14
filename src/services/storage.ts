@@ -27,15 +27,20 @@ interface CacheEnvelope<T> {
 
 class LocalStorageCacheAdapter implements CacheAdapter {
   private prefix = 'odyssey_flow:';
+  private memoryFallback = new Map<string, string>();
 
   private fullKey(key: string): string {
     return `${this.prefix}${key}`;
   }
 
   get<T>(key: string): T | null {
-    if (typeof window === 'undefined') return null;
     try {
-      const item = localStorage.getItem(this.fullKey(key));
+      let item: string | null = null;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        item = localStorage.getItem(this.fullKey(key));
+      } else {
+        item = this.memoryFallback.get(this.fullKey(key)) || null;
+      }
       if (!item) return null;
 
       const envelope: CacheEnvelope<T> = JSON.parse(item);
@@ -51,14 +56,18 @@ class LocalStorageCacheAdapter implements CacheAdapter {
   }
 
   set<T>(key: string, value: T, ttlSeconds?: number): void {
-    if (typeof window === 'undefined') return;
     try {
       const envelope: CacheEnvelope<T> = {
         data: value,
         cachedAt: Date.now(),
         expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : undefined,
       };
-      localStorage.setItem(this.fullKey(key), JSON.stringify(envelope));
+      const serialized = JSON.stringify(envelope);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(this.fullKey(key), serialized);
+      } else {
+        this.memoryFallback.set(this.fullKey(key), serialized);
+      }
       this.notifySubscribers(key, value);
     } catch (e) {
       console.warn(`[Cache Error] Failed saving key "${key}":`, e);
@@ -66,9 +75,12 @@ class LocalStorageCacheAdapter implements CacheAdapter {
   }
 
   remove(key: string): void {
-    if (typeof window === 'undefined') return;
     try {
-      localStorage.removeItem(this.fullKey(key));
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(this.fullKey(key));
+      } else {
+        this.memoryFallback.delete(this.fullKey(key));
+      }
       this.notifySubscribers(key, null);
     } catch (e) {
       console.warn(`[Cache Error] Failed removing key "${key}":`, e);

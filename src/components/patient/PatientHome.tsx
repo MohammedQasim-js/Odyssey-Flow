@@ -3,7 +3,7 @@ import {
   HeartPulse, Sparkles, MapPin, Clock, Stethoscope, 
   ArrowRight, ShieldCheck, ChevronRight, User, Plus, 
   Activity, Search, FileText, Calendar, Pill, CheckCircle2,
-  Building2, AlertCircle, ArrowUpRight, Check
+  Building2, AlertCircle, ArrowUpRight, Check, Receipt, Lock
 } from 'lucide-react';
 import { Token, Patient, Clinic, Appointment } from '../../types';
 import { SanctuaryPulseEngine } from '../../services/sanctuaryPulseEngine';
@@ -16,7 +16,9 @@ interface PatientHomeProps {
   onNavigateToCheckIn: () => void;
   onNavigateToClinics: () => void;
   onNavigateToHistory: () => void;
+  onNavigateToBilling?: () => void;
   onNavigateToAppointments?: () => void;
+  onNavigateToProfile?: () => void;
   onSelectClinic?: (clinic: Clinic) => void;
   onOpenEntryModal?: () => void;
 }
@@ -28,12 +30,14 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
   onNavigateToCheckIn,
   onNavigateToClinics,
   onNavigateToHistory,
+  onNavigateToBilling,
   onNavigateToAppointments = onNavigateToCheckIn,
+  onNavigateToProfile,
   onSelectClinic = onNavigateToClinics,
   onOpenEntryModal,
 }) => {
   const patient = propPatient || DataStore.getCurrentPatient() || DataStore.getPatients()[0];
-  const token = propToken || DataStore.getActiveToken();
+  const token = propToken || DataStore.getActiveToken(patient.id) || (DataStore.getActiveToken()?.patientId === patient.id ? DataStore.getActiveToken() : undefined);
   const [searchQuery, setSearchQuery] = useState('');
 
   const doctor = token ? DataStore.getDoctors().find(d => d.id === token.doctorId) : undefined;
@@ -42,31 +46,35 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
   const appointments = DataStore.getAppointments(patient.id).filter(a => a.status === 'upcoming');
 
   // Derive firstName cleanly
-  const firstName = patient.fullName.split(' ')[0] || 'Aarav';
+  const firstName = patient.fullName.split(' ')[0] || 'Patient';
+  const opaqueId = patient.masked_identity_reference || patient.hypotheticalAadhaar || 'PAT-DEMO';
+  const isConsentDeclined = patient.consent_status === 'declined';
 
   return (
     <div className="space-y-4 pb-24 font-sans text-stone-900 animate-in fade-in duration-200">
       
-      {/* 1. Top Header: "Good morning, Aarav" + Avatar + Clinic Context (Matching Reference Screen 1) */}
+      {/* 1. Top Header: Patient Greeting + Clinic Context */}
       <div className="flex items-center justify-between pt-1">
         <div>
           <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight leading-none">
             Good morning, {firstName}
           </h1>
           <div className="flex items-center space-x-1.5 mt-1.5 text-xs text-stone-500 font-medium">
+            <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              {opaqueId}
+            </span>
+            <span className="text-stone-300">•</span>
             <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             <span className="font-semibold text-stone-800">Odyssey Care Clinic</span>
-            <span className="text-stone-300">•</span>
-            <span className="text-stone-500">1.4 km away</span>
           </div>
         </div>
 
-        {/* Profile Avatar with subtle green dot and prototype identity indicator */}
+        {/* Profile Avatar with simulated identity switcher */}
         <div className="flex items-center space-x-2">
           <button
             onClick={onOpenEntryModal}
             className="relative group p-0.5 rounded-full hover:ring-2 hover:ring-emerald-400 transition-all"
-            title="Click to view simulated Aadhaar identity or switch demo profile"
+            title="Switch synthetic demo patient or enter phone"
           >
             <div className="w-11 h-11 rounded-full overflow-hidden bg-stone-100 border-2 border-white shadow-xs">
               <img
@@ -80,7 +88,30 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
         </div>
       </div>
 
-      {/* 2. Compact Search Bar with Green Circular Search Button (Matching Reference Screen 1) */}
+      {/* 2. Primary Direct Check-in Banner / CTA */}
+      <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 text-white shadow-sm flex items-center justify-between">
+        <div className="space-y-0.5">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-200 block">
+            Direct Walk-in Check-in
+          </span>
+          <h2 className="text-base font-extrabold leading-tight">
+            Consult a Doctor Today
+          </h2>
+          <p className="text-[11px] text-emerald-100">
+            Instant digital queue token. Zero reception lines.
+          </p>
+        </div>
+
+        <button
+          onClick={onNavigateToCheckIn}
+          className="py-2.5 px-4 rounded-2xl bg-white hover:bg-stone-100 active:scale-95 text-emerald-950 font-bold text-xs shadow-xs transition-all flex items-center space-x-1.5 shrink-0"
+        >
+          <span>Check In</span>
+          <ArrowRight className="w-3.5 h-3.5 text-emerald-700" />
+        </button>
+      </div>
+
+      {/* 3. Search Bar */}
       <div className="relative flex items-center">
         <div className="relative w-full">
           <Search className="w-4 h-4 text-stone-400 absolute left-4 top-3.5" />
@@ -104,17 +135,17 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
         </div>
       </div>
 
-      {/* 3. Circular Quick Actions (Matching Reference Screen 1 with soft pastel circles) */}
+      {/* 4. Quick Actions (Check In, Queue, Journey, Appointments) */}
       <div className="grid grid-cols-4 gap-2 pt-1 text-center">
         <button
-          onClick={onNavigateToClinics}
+          onClick={onNavigateToCheckIn}
           className="flex flex-col items-center group active:scale-95 transition-transform"
         >
           <div className="w-13 h-13 rounded-2xl bg-emerald-50/90 group-hover:bg-emerald-100 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-2xs transition-colors">
-            <Building2 className="w-6 h-6 text-emerald-600" />
+            <Plus className="w-6 h-6 text-emerald-600" />
           </div>
           <span className="text-[11px] font-bold text-stone-700 mt-1.5 group-hover:text-stone-900">
-            Find Clinic
+            Check In
           </span>
         </button>
 
@@ -126,7 +157,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
             <HeartPulse className="w-6 h-6 text-teal-600" />
           </div>
           <span className="text-[11px] font-bold text-stone-700 mt-1.5 group-hover:text-stone-900">
-            My Queue
+            Live Queue
           </span>
         </button>
 
@@ -143,29 +174,29 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
         </button>
 
         <button
-          onClick={onNavigateToAppointments}
+          onClick={onNavigateToClinics}
           className="flex flex-col items-center group active:scale-95 transition-transform"
         >
           <div className="w-13 h-13 rounded-2xl bg-indigo-50/90 group-hover:bg-indigo-100 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs transition-colors">
-            <Calendar className="w-6 h-6 text-indigo-600" />
+            <Building2 className="w-6 h-6 text-indigo-600" />
           </div>
           <span className="text-[11px] font-bold text-stone-700 mt-1.5 group-hover:text-stone-900">
-            Appointments
+            Clinics
           </span>
         </button>
       </div>
 
-      {/* 4. Current Visit (Dominant Active Token Card) */}
+      {/* 5. Current Visit (Dominant Active Token Card) */}
       {token ? (
         <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative overflow-hidden space-y-3.5">
           {/* Subtle top indicator bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-[#34C759]"></div>
 
-          {/* Header: ODYSSEY CARE CLINIC & Specialty badge */}
+          {/* Header: Clinic & Specialty badge */}
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[10px] font-extrabold tracking-wider uppercase text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 inline-block mb-1">
-                {token.specialty || 'General Medicine'}
+                {token.specialty || token.department || 'General Medicine'}
               </span>
               <h2 className="text-base font-extrabold text-stone-900 leading-tight">
                 {token.clinicName || 'ODYSSEY CARE CLINIC'}
@@ -191,7 +222,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
                   {token.doctorName || 'Dr. A. Sharma'}
                 </span>
                 <span className="text-[11px] text-stone-500">
-                  {token.roomNumber || 'Room 101'} • Senior Review Eligible
+                  {token.roomNumber || 'Room 101'} • Consultation
                 </span>
               </div>
             </div>
@@ -204,7 +235,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
             </div>
           </div>
 
-          {/* Sanctuary Pulse: Primary Emotional Status & Secondary Wait Time */}
+          {/* Sanctuary Pulse: Emotional Status & Estimated Wait Time */}
           <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -218,7 +249,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-emerald-800/80 pl-4.5">
-              Everything is moving normally. Your turn is anticipated soon.
+              {pulse?.subtext || 'Everything is moving smoothly. You will be notified when your turn approaches.'}
             </p>
           </div>
 
@@ -229,43 +260,113 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
               className="flex-1 py-3 px-4 rounded-2xl bg-[#34C759] hover:bg-[#2EB84F] text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center space-x-1.5"
             >
               <HeartPulse className="w-4 h-4 text-white" />
-              <span>View Sanctuary Pulse</span>
+              <span>Open Sanctuary Pulse</span>
             </button>
 
             <button
-              onClick={onNavigateToPulse}
-              className="py-3 px-4 rounded-2xl bg-white border border-stone-200 text-stone-800 font-bold text-xs shadow-2xs hover:bg-stone-50 transition-all"
+              onClick={onNavigateToCheckIn}
+              className="py-3 px-3.5 rounded-2xl bg-white border border-stone-200 text-stone-700 font-bold text-xs shadow-2xs hover:bg-stone-50 transition-all"
             >
-              View Queue
+              Update Check-in
             </button>
           </div>
         </div>
       ) : (
         <div className="bg-white rounded-3xl p-5 border border-stone-200/70 shadow-2xs text-center space-y-2">
-          <div className="w-10 h-10 mx-auto rounded-2xl bg-stone-100 flex items-center justify-center text-stone-400">
+          <div className="w-10 h-10 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
             <HeartPulse className="w-5 h-5" />
           </div>
           <h3 className="text-sm font-extrabold text-stone-900">
-            Nothing in the queue right now.
+            No active queue token right now
           </h3>
           <p className="text-xs text-stone-500 max-w-xs mx-auto">
-            Ready to visit? Check in to any clinic to receive your live digital token.
+            Ready to visit? Check in to generate a live token and track your turn in Sanctuary Pulse.
           </p>
           <button
-            onClick={onNavigateToClinics}
-            className="mt-1 inline-flex items-center space-x-1.5 py-2.5 px-4 rounded-xl bg-[#34C759] hover:bg-[#2EB84F] text-white text-xs font-bold shadow-2xs"
+            onClick={onNavigateToCheckIn}
+            className="mt-1 inline-flex items-center space-x-1.5 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all"
           >
-            <span>Find a clinic</span>
+            <span>Start Direct Check-in</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* 5. Upcoming Appointments (Matching Reference Screen 1) */}
+      {/* 6. Recent Diagnostic Journey Summary */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-extrabold text-stone-900">
-            Upcoming
+            Recent Diagnostic Journey
+          </h3>
+          <button
+            onClick={onNavigateToHistory}
+            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+          >
+            Full Journey
+          </button>
+        </div>
+
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/70 shadow-xs space-y-3">
+          {isConsentDeclined ? (
+            <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs space-y-1.5">
+              <div className="flex items-center space-x-1.5 text-stone-700 font-bold">
+                <Lock className="w-3.5 h-3.5 text-stone-500" />
+                <span>Longitudinal Sharing Declined</span>
+              </div>
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                You chose not to share previous cross-facility clinical records during intake. Only current visit intake notes are visible to the care team.
+              </p>
+              <button
+                onClick={onNavigateToCheckIn}
+                className="text-[11px] font-bold text-emerald-700 hover:underline inline-block pt-0.5"
+              >
+                Change sharing consent in check-in →
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100/70 text-emerald-800 flex items-center justify-center font-bold">
+                    <Activity className="w-4 h-4 text-emerald-700" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-900">
+                      Longitudinal Timeline
+                    </h4>
+                    <span className="text-[10px] text-stone-500">Cross-facility diagnostic tracking</span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-stone-400 block">DPS Score</span>
+                  <span className="text-xs font-extrabold font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {patient.currentDps || 85} / 100
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-stone-600 leading-relaxed bg-stone-50 p-3 rounded-2xl border border-stone-100">
+                {patient.activeJourneySummary || 'Longitudinal diagnostic tracking active; historical care milestones synchronized.'}
+              </p>
+
+              <button
+                onClick={onNavigateToHistory}
+                className="w-full py-2.5 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-all text-center flex items-center justify-center space-x-1"
+              >
+                <span>View Timeline &amp; Referrals</span>
+                <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 7. Upcoming Appointments */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-extrabold text-stone-900">
+            Upcoming Appointments
           </h3>
           <button
             onClick={onNavigateToAppointments}
@@ -277,7 +378,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
 
         {appointments.length === 0 ? (
           <div className="bg-white rounded-3xl p-4 border border-stone-200/70 text-center text-xs text-stone-500">
-            No upcoming appointments
+            No scheduled upcoming appointments. Walk-in tokens are available via Check-in.
           </div>
         ) : (
           <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/70 shadow-[0_4px_24px_rgba(0,0,0,0.03)] space-y-3">
@@ -329,11 +430,11 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
         )}
       </div>
 
-      {/* 6. Clinic Discovery ("Find a clinic" section matching prompt requirements) */}
+      {/* 8. Clinic Discovery */}
       <div className="space-y-2.5 pt-1">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-extrabold text-stone-900">
-            Find a clinic
+            Available Clinics
           </h3>
           <button
             onClick={onNavigateToClinics}
@@ -382,7 +483,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
                 </span>
               </div>
 
-              {/* Button: Join Queue */}
+              {/* Button: Join Queue (Direct to CheckIn) */}
               <div className="pt-0.5">
                 <button
                   type="button"
@@ -392,7 +493,7 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
                   }}
                   className="w-full py-2.5 px-4 rounded-xl bg-stone-900 hover:bg-black text-white text-xs font-bold transition-all flex items-center justify-center space-x-1.5"
                 >
-                  <span>Join Queue</span>
+                  <span>Check In at this Clinic</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

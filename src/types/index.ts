@@ -65,8 +65,8 @@ export interface Patient {
   phone: string;
   maskedPhone: string;
   masked_identity_reference?: string;
-  consent_status?: "granted" | "pending" | "revoked";
-  hypotheticalAadhaar: string; // strictly fake/demo value e.g. "DEMO-IND-XXXX-2741"
+  consent_status?: "granted" | "declined" | "pending" | "revoked" | string;
+  hypotheticalAadhaar: string; // strictly fake/demo value e.g. "DEMO-IND-XXXX-2741" or "PAT-XXXX"
   age: number;
   gender: "Female" | "Male" | "Other";
   bloodGroup: string;
@@ -227,6 +227,8 @@ export interface Token {
   stagnationFlag: boolean;
   stagnationReason?: string;
   symptomsSummary: string;
+  department?: string;
+  consent_status?: "granted" | "declined" | "pending" | "revoked" | string;
   expectedDuration?: number;
   routing?: string;
   created_at?: string;
@@ -335,6 +337,8 @@ export interface Visit {
   specialty: string;
   date: string;
   reason: string;
+  department?: string;
+  consent_status?: "granted" | "declined" | "pending" | "revoked" | string;
   chiefComplaint?: string;
   outcome?: string;
   status: "completed" | "scheduled" | "cancelled" | "in_progress" | "waiting";

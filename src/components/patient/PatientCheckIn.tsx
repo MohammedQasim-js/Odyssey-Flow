@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ShieldCheck, Phone, CheckCircle2, AlertCircle, Sparkles, 
   ArrowRight, UserCheck, Stethoscope, Clock, Activity, Building2,
-  Check, HeartPulse
+  Check, HeartPulse, Lock, ShieldAlert
 } from 'lucide-react';
 import { DataStore, INITIAL_PATIENTS } from '../../services/dataStore';
 import { Token, Patient, Clinic } from '../../types';
@@ -10,7 +10,16 @@ import { Token, Patient, Clinic } from '../../types';
 interface PatientCheckInProps {
   onTokenCreated: (token: Token) => void;
   initialClinicId?: string;
+  patient?: Patient;
 }
+
+const DEPARTMENTS = [
+  'General Medicine',
+  'Internal Medicine',
+  'Gastroenterology',
+  'Neurology',
+  'Diagnostic Triage'
+];
 
 const COMMON_SYMPTOMS = [
   'Persistent headache',
@@ -18,21 +27,29 @@ const COMMON_SYMPTOMS = [
   'Fever',
   'Cough',
   'Abdominal pain',
-  'Body ache'
+  'Body ache',
+  'Dizziness',
+  'Joint stiffness'
 ];
 
 export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
   onTokenCreated,
   initialClinicId = 'clinic_odyssey_care',
+  patient: propPatient,
 }) => {
-  const currentPatient = DataStore.getCurrentPatient() || INITIAL_PATIENTS[0];
+  const currentPatient = propPatient || DataStore.getCurrentPatient() || INITIAL_PATIENTS[0];
   const clinics = DataStore.getClinics();
 
   const [selectedClinicId, setSelectedClinicId] = useState(initialClinicId);
-  const [visitReason, setVisitReason] = useState('Consultation');
-  const [symptomText, setSymptomText] = useState('Persistent headache daily for past 8 months with fatigue');
-  const [selectedTags, setSelectedTags] = useState<string[]>(['Persistent headache', 'Fatigue']);
-  const [shareConsent, setShareConsent] = useState(true);
+  const [department, setDepartment] = useState('General Medicine');
+  
+  // Neutral form defaults (do not pre-populate with Aarav's headache story)
+  const [visitReason, setVisitReason] = useState('');
+  const [symptomText, setSymptomText] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Optional longitudinal consent defaults to UNCHECKED (false)
+  const [shareConsent, setShareConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedToken, setGeneratedToken] = useState<Token | null>(null);
 
@@ -49,25 +66,40 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
     if (isSubmitting) return; // Prevent repeated submissions
     setIsSubmitting(true);
 
+    const consentVal: 'granted' | 'declined' = shareConsent ? 'granted' : 'declined';
+    
+    // Persist choice in data model immediately
+    DataStore.updatePatientConsent(currentPatient.id, consentVal);
+
+    const summaryParts: string[] = [];
+    if (visitReason.trim()) summaryParts.push(visitReason.trim());
+    if (selectedTags.length > 0) summaryParts.push(`Symptoms: ${selectedTags.join(', ')}`);
+    if (symptomText.trim()) summaryParts.push(`Notes: ${symptomText.trim()}`);
+    const symptomsSummary = summaryParts.length > 0 ? summaryParts.join('. ') : `${department} Consultation`;
+
     setTimeout(() => {
       // Generate canonical token in DataStore (handles idempotency and canonical IDs)
       const token = DataStore.generateToken({
         patientId: currentPatient.id,
         clinicId: selectedClinicId,
-        symptomsSummary: `${visitReason}. Tags: ${selectedTags.join(', ')}. Details: ${symptomText}`,
-        severity: 7,
-        durationDays: 21,
+        department,
+        consent_status: consentVal,
+        symptomsSummary,
+        severity: 6,
+        durationDays: 14,
       });
 
       setGeneratedToken(token);
       setIsSubmitting(false);
-    }, 600);
+    }, 500);
   };
 
   // -------------------------------------------------------------
   // VIEW: TOKEN GENERATION RESULT (After submission)
   // -------------------------------------------------------------
   if (generatedToken) {
+    const isConsentGranted = generatedToken.consent_status === 'granted';
+
     return (
       <div className="space-y-4 pb-24 font-sans text-stone-900 animate-in fade-in zoom-in-95 duration-200">
         
@@ -78,25 +110,47 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
             <CheckCircle2 className="w-9 h-9" />
           </div>
 
-          <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Check-In Confirmed • Zero-Friction Flow
+          <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block">
+            Check-In Confirmed • Smart Queue
           </span>
 
           <h2 className="text-xl font-extrabold text-stone-900 mt-2">
-            You're In The Smart Queue
+            You're In The Live Queue
           </h2>
           <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
-            Your clinical history has been synchronized with your consulting physician.
+            Your consultation request is registered. Monitor real-time status in Sanctuary Pulse.
           </p>
 
           {/* Token Big Display */}
           <div className="mt-5 p-4 rounded-2xl bg-stone-900 text-white shadow-sm space-y-1">
             <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
-              Your Queue Token
+              Your Live Queue Token
             </span>
             <div className="text-4xl font-extrabold font-mono tracking-tight text-white">
-              {generatedToken.tokenNumber || 'A-27'}
+              {generatedToken.tokenNumber}
             </div>
+            <span className="text-[11px] text-stone-400 block font-medium">
+              {generatedToken.clinicName}
+            </span>
+          </div>
+
+          {/* Consent Status Indicator Pill */}
+          <div className="mt-3.5 p-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 border transition-colors bg-stone-50 border-stone-200">
+            {isConsentGranted ? (
+              <>
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-emerald-900 font-semibold">
+                  Longitudinal Journey Sharing: <strong>Authorized</strong>
+                </span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 text-stone-500 shrink-0" />
+                <span className="text-stone-700 font-medium">
+                  Longitudinal Journey Sharing: <strong>Declined</strong> (Intake notes only)
+                </span>
+              </>
+            )}
           </div>
 
           {/* Consultation Breakdown Grid */}
@@ -104,7 +158,7 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
             <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/60">
               <span className="text-[10px] uppercase font-semibold text-stone-400 block">Assigned Doctor</span>
               <strong className="text-stone-900 block mt-0.5">{generatedToken.doctorName || 'Dr. A. Sharma'}</strong>
-              <span className="text-[11px] text-emerald-700 font-medium">{generatedToken.specialty || 'General Medicine'}</span>
+              <span className="text-[11px] text-emerald-700 font-medium">{generatedToken.specialty || department}</span>
             </div>
 
             <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/60">
@@ -115,14 +169,14 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
 
             <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/60">
               <span className="text-[10px] uppercase font-semibold text-stone-400 block">Queue Position</span>
-              <strong className="text-stone-900 block mt-0.5">{generatedToken.queuePosition || 7} in line</strong>
-              <span className="text-[11px] text-stone-500">Moving steadily</span>
+              <strong className="text-stone-900 block mt-0.5">{generatedToken.queuePosition} in line</strong>
+              <span className="text-[11px] text-stone-500">Live pacing</span>
             </div>
 
             <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/60">
-              <span className="text-[10px] uppercase font-semibold text-stone-400 block">Estimated Time</span>
-              <strong className="text-stone-900 block mt-0.5">~{generatedToken.estimatedWaitMin || 24} mins</strong>
-              <span className="text-[11px] text-stone-500">Real-time dynamic</span>
+              <span className="text-[10px] uppercase font-semibold text-stone-400 block">Estimated Wait</span>
+              <strong className="text-stone-900 block mt-0.5">~{generatedToken.estimatedWaitMin} mins</strong>
+              <span className="text-[11px] text-stone-500">Dynamic estimate</span>
             </div>
           </div>
 
@@ -153,19 +207,19 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
       {/* Title & Introduction */}
       <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs">
         <h2 className="text-xl font-extrabold tracking-tight text-stone-900">
-          Zero-Friction Clinic Check-in
+          Clinic Check-in
         </h2>
         <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-          Check in seamlessly without waiting at physical reception desks. Your diagnostic history is automatically linked.
+          Check in seamlessly for today's walk-in consultation without physical paperwork.
         </p>
 
-        {/* Prototype Aadhaar disclaimer badge */}
-        <div className="mt-3.5 p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-start space-x-2.5 text-xs text-amber-900">
-          <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+        {/* Prototype disclaimer badge */}
+        <div className="mt-3.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-start space-x-2.5 text-xs text-emerald-900">
+          <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <span className="font-bold">Prototype Identity Verification</span>
-            <p className="text-[11px] text-amber-800 mt-0.5">
-              Simulated identity linked to your patient profile. No actual Aadhaar or government records are stored or accessed.
+            <span className="font-bold">Prototype Patient Intake</span>
+            <p className="text-[11px] text-emerald-800 mt-0.5">
+              Operating with synthetic patient profiles and demo queue orchestration.
             </p>
           </div>
         </div>
@@ -176,12 +230,12 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
         {/* 1. Identity Confirmation Card */}
         <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs space-y-3">
           <span className="text-xs font-bold text-stone-700 uppercase tracking-wider block">
-            1. Identity Confirmation
+            1. Patient Profile
           </span>
 
-          <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between text-xs">
+          <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between text-xs">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-200/70 text-emerald-900 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
                 <UserCheck className="w-5 h-5 text-emerald-800" />
               </div>
               <div>
@@ -191,9 +245,9 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
             </div>
 
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-emerald-800 block">Aadhaar-Linked ID</span>
-              <span className="font-mono text-xs font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded">
-                {currentPatient.hypotheticalAadhaar}
+              <span className="text-[10px] uppercase font-bold text-stone-400 block">Patient ID</span>
+              <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded">
+                {currentPatient.masked_identity_reference || currentPatient.hypotheticalAadhaar || 'PAT-DEMO'}
               </span>
             </div>
           </div>
@@ -237,14 +291,41 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
           </div>
         </div>
 
-        {/* 3. Visit Reason & Symptom Input */}
+        {/* 3. Department Selection */}
+        <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs space-y-3">
+          <span className="text-xs font-bold text-stone-700 uppercase tracking-wider block">
+            3. Department / Consultation Type
+          </span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {DEPARTMENTS.map((dept) => (
+              <button
+                key={dept}
+                type="button"
+                onClick={() => setDepartment(dept)}
+                className={`p-3 rounded-2xl border text-left text-xs font-semibold transition-all ${
+                  department === dept
+                    ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950 ring-1 ring-emerald-600'
+                    : 'border-stone-200 text-stone-700 hover:bg-stone-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>{dept}</span>
+                  {department === dept && <Check className="w-4 h-4 text-emerald-600" />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. Visit Reason & Symptom Input */}
         <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs space-y-3.5">
           <div>
             <span className="text-xs font-bold text-stone-700 uppercase tracking-wider block">
-              3. Visit Reason &amp; Symptoms
+              4. Visit Reason &amp; Symptoms
             </span>
             <p className="text-[11px] text-stone-500 mt-0.5">
-              Quick description for your doctor. (Not a medical diagnosis form).
+              Enter your chief complaint or select common symptoms for triage.
             </p>
           </div>
 
@@ -256,16 +337,15 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
               type="text"
               value={visitReason}
               onChange={(e) => setVisitReason(e.target.value)}
-              placeholder="e.g. Persistent fatigue, routine checkup, stomach pain"
+              placeholder="e.g. Fever, persistent headache, stomach ache, routine follow-up"
               className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-stone-50/50"
-              required
             />
           </div>
 
           {/* Quick Common Symptom Tags */}
           <div>
             <label className="text-xs font-semibold text-stone-700 block mb-1.5">
-              Common Symptom Tags
+              Select Symptoms (Optional)
             </label>
             <div className="flex flex-wrap gap-2">
               {COMMON_SYMPTOMS.map((tag) => {
@@ -292,19 +372,19 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
           {/* Simple optional notes */}
           <div>
             <label className="text-xs font-semibold text-stone-700 block mb-1">
-              Additional Notes (Optional)
+              Additional Details (Optional)
             </label>
             <textarea
               rows={2}
               value={symptomText}
               onChange={(e) => setSymptomText(e.target.value)}
-              placeholder="Any details you'd like your doctor to know in advance..."
+              placeholder="Describe duration, severity, or any other notes for the consulting doctor..."
               className="w-full p-3 text-xs sm:text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-stone-50/50"
             />
           </div>
         </div>
 
-        {/* 4. Consent Checkbox */}
+        {/* 5. Consent Checkbox (Defaults to UNCHECKED) */}
         <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs">
           <label className="flex items-start space-x-3 cursor-pointer">
             <input
@@ -315,16 +395,16 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
             />
             <div className="text-xs">
               <span className="font-bold text-stone-900 block">
-                Share previous visit summaries with consulting doctor
+                Share previous longitudinal health records with doctor
               </span>
               <p className="text-stone-500 text-[11px] mt-0.5 leading-relaxed">
-                Permits Odyssey Flow to compile an instant pre-consultation diagnostic snapshot from your previous health records.
+                Permits Odyssey Flow to load your longitudinal diagnostic journey in the clinician snapshot. Default is unchecked (opt-in). If declined, only intake information for today's visit will be visible.
               </p>
             </div>
           </label>
         </div>
 
-        {/* 5. Submit CTA: "Confirm Check-in & Get Token" */}
+        {/* 6. Submit CTA: "Confirm Check-in & Get Token" */}
         <div>
           <button
             type="submit"
@@ -332,7 +412,7 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
             className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2"
           >
             <Sparkles className="w-4 h-4" />
-            <span>{isSubmitting ? 'Generating Smart Token...' : 'Confirm Check-in & Get Token'}</span>
+            <span>{isSubmitting ? 'Generating Queue Token...' : 'Confirm Check-in & Get Token'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

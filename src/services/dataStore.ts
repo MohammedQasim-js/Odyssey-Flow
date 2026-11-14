@@ -2035,8 +2035,9 @@ export class DataStore {
   }
 
   /**
-   * Simulated Aadhaar-Linked Patient Retrieval
+   * Simulated Patient Retrieval by Mobile Number
    * COMPLIANCE: Strictly simulated prototype flow. No real Aadhaar API or storage.
+   * Never silently falls back to Aarav Mehta.
    */
   static lookupPatientByPhone(phone: string): { 
     found: boolean; 
@@ -2055,7 +2056,7 @@ export class DataStore {
         found: true,
         patient: matched,
         simulatedAadhaarRef: matched.hypotheticalAadhaar,
-        message: 'Identity matched via simulated Aadhaar-linked registry.',
+        message: 'Identity matched via simulated registry.',
       };
     }
 
@@ -2063,6 +2064,70 @@ export class DataStore {
       found: false,
       message: 'No existing patient profile found for this mobile number.',
     };
+  }
+
+  /**
+   * Create a temporary synthetic walk-in patient profile.
+   * COMPLIANCE:
+   * - Uses opaque internal identifier PAT-XXXX.
+   * - Never stores realistic Aadhaar or real PII.
+   * - Defaults longitudinal data sharing consent to 'declined'.
+   * - Never falls back to Aarav Mehta.
+   */
+  static createTemporaryPatient(phone: string): Patient {
+    this.init();
+    const cleanDigits = phone.replace(/\D/g, '');
+    const last4 = cleanDigits.slice(-4) || Math.floor(1000 + Math.random() * 9000).toString();
+    const opaqueId = `PAT-${last4}`;
+    const tempId = `pat_temp_${last4}_${Date.now().toString(36)}`;
+    const maskedPhone = cleanDigits.length >= 10
+      ? `+91 ${cleanDigits.slice(cleanDigits.length - 10, cleanDigits.length - 8)}XXXXXX${last4.slice(-2)}`
+      : `+91 98XXXXXX${last4.slice(-2)}`;
+
+    const newPatient: Patient = {
+      id: tempId,
+      name: `Walk-in Patient (${opaqueId})`,
+      fullName: `Walk-in Patient (${opaqueId})`,
+      phone: phone || `+91 98000 ${last4}`,
+      maskedPhone,
+      masked_identity_reference: opaqueId,
+      hypotheticalAadhaar: opaqueId,
+      consent_status: 'declined',
+      age: 32,
+      gender: 'Other',
+      bloodGroup: 'Unknown',
+      emergencyContact: '+91 98000 00000',
+      registeredDate: new Date().toISOString().split('T')[0],
+      hasStagnation: false,
+      currentDps: 80,
+      activeJourneySummary: 'New walk-in patient; no prior longitudinal records on file.',
+      created_at: new Date().toISOString(),
+    };
+
+    const patients = this.getPatients();
+    cache.set(CACHE_KEYS.PATIENT_RECORDS, [newPatient, ...patients]);
+    cache.set(CACHE_KEYS.CURRENT_PATIENT_SESSION, newPatient);
+    this.logAudit('PATIENT_CREATED', 'patient', newPatient.id, `Created synthetic walk-in patient profile ${opaqueId}`);
+    return newPatient;
+  }
+
+  /**
+   * Update longitudinal data-sharing consent status for a patient.
+   */
+  static updatePatientConsent(patientId: string, consent: 'granted' | 'declined'): void {
+    this.init();
+    const patients = this.getPatients().map(p => {
+      if (p.id === patientId) {
+        return { ...p, consent_status: consent };
+      }
+      return p;
+    });
+    cache.set(CACHE_KEYS.PATIENT_RECORDS, patients);
+    const curr = cache.get<Patient>(CACHE_KEYS.CURRENT_PATIENT_SESSION);
+    if (curr && curr.id === patientId) {
+      cache.set(CACHE_KEYS.CURRENT_PATIENT_SESSION, { ...curr, consent_status: consent });
+    }
+    this.logAudit('CONSENT_UPDATED', 'patient', patientId, `Patient consent updated to ${consent}`);
   }
 
   // --- Queue & Tokens ---
@@ -2823,6 +2888,8 @@ export class DataStore {
     patientId: string;
     clinicId: string;
     doctorId?: string;
+    department?: string;
+    consent_status?: 'granted' | 'declined';
     symptomsSummary: string;
     severity?: number;
     durationDays?: number;
@@ -2832,11 +2899,18 @@ export class DataStore {
     const patient = this.getPatient(params.patientId);
     const clinic = this.getClinic(params.clinicId) || INITIAL_CLINICS[0];
     const doctors = this.getDoctors();
+
+    // Persist consent if provided
+    if (params.consent_status) {
+      this.updatePatientConsent(params.patientId, params.consent_status);
+    }
     
     // Choose doctor (if patient has low DPS, assign Senior Specialist)
     let assignedDoctor = doctors.find(d => d.id === params.doctorId);
     if (!assignedDoctor) {
-      if (patient && patient.currentDps < 50) {
+      if (params.department) {
+        assignedDoctor = doctors.find(d => (d.specialty || '').toLowerCase().includes(params.department!.toLowerCase())) || doctors[0];
+      } else if (patient && patient.currentDps < 50) {
         assignedDoctor = doctors.find(d => (d.specialty || '').includes('Senior') || (d.specialty || '').includes('Diagnostic')) || doctors[0];
       } else {
         assignedDoctor = doctors[1] || doctors[0];
@@ -2855,6 +2929,12 @@ export class DataStore {
       if (params.symptomsSummary) {
         existingActiveToken.symptomsSummary = params.symptomsSummary;
       }
+      if (params.consent_status) {
+        existingActiveToken.consent_status = params.consent_status;
+      }
+      if (params.department) {
+        existingActiveToken.department = params.department;
+      }
       this.setActiveToken(existingActiveToken);
       this.logAudit('TOKEN_REUSED', 'token', existingActiveToken.id, `Patient ${existingActiveToken.patientName} reused active token ${existingActiveToken.tokenNumber}`);
 
@@ -2862,6 +2942,9 @@ export class DataStore {
       if (patient) {
         const visits = this.getVisits(patient.id);
         const existingVisit = visits.find(v => v.id === existingActiveToken.visitId || v.id === existingActiveToken.visit_id) || visits[0];
+        if (existingVisit && params.consent_status) {
+          existingVisit.consent_status = params.consent_status;
+        }
         if (!existingActiveToken.visitId && existingVisit) {
           existingActiveToken.visitId = existingVisit.id;
           existingActiveToken.visit_id = existingVisit.id;
@@ -2920,6 +3003,8 @@ export class DataStore {
       doctor_id: assignedDoctor.id,
       doctorName: assignedDoctor.name,
       specialty: assignedDoctor.specialty,
+      department: params.department || assignedDoctor.specialty,
+      consent_status: params.consent_status || patient?.consent_status || 'declined',
       date: new Date().toISOString().split('T')[0],
       reason: params.symptomsSummary || 'Walk-in Consultation',
       chiefComplaint: params.symptomsSummary || 'Walk-in Consultation',
@@ -2948,6 +3033,8 @@ export class DataStore {
       clinicName: clinic.name,
       doctorName: assignedDoctor.name,
       specialty: assignedDoctor.specialty,
+      department: params.department || assignedDoctor.specialty,
+      consent_status: params.consent_status || patient?.consent_status || 'declined',
       roomNumber: assignedDoctor.room || 'Room 101',
       status: 'waiting',
       priority: isStagnant ? 'priority_stagnation' : 'standard',

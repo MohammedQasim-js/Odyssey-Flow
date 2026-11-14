@@ -62,7 +62,7 @@ export const PatientProfileView: React.FC<PatientProfileViewProps> = ({
             Phone: {patient.maskedPhone || '+91 98XXXXXX42'}
           </p>
           <p className="text-xs text-stone-500 font-mono mt-0.5">
-            Patient ID: <strong className="text-stone-800">OF-000284</strong>
+            Patient ID: <strong className="text-stone-800">{patient.masked_identity_reference || patient.hypotheticalAadhaar || 'PAT-DEMO'}</strong>
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export const PatientProfileView: React.FC<PatientProfileViewProps> = ({
             </span>
           </div>
           <span className="font-mono text-xs font-bold text-stone-900 block">
-            {patient.hypotheticalAadhaar || 'XXXX XXXX 2741'}
+            {patient.masked_identity_reference || patient.hypotheticalAadhaar || 'PAT-DEMO'}
           </span>
           <p className="text-[10px] text-stone-400 leading-tight">
             Simulated demonstration reference only. No government identity data is stored.

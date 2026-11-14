@@ -121,9 +121,14 @@ export const PatientShell: React.FC<PatientShellProps> = ({
     setActiveTab("pulse");
   };
 
+  const handleJoinQueueAtClinic = (clinic: Clinic) => {
+    setSelectedClinic(clinic);
+    setActiveTab("checkin");
+  };
+
   const handleAuthenticated = (patient: Patient) => {
     setCurrentPatient(patient);
-    const token = DataStore.getActiveToken();
+    const token = DataStore.getActiveToken(patient.id);
     setActiveToken(token);
   };
 
@@ -151,11 +156,13 @@ export const PatientShell: React.FC<PatientShellProps> = ({
             token={activeToken}
             patient={currentPatient}
             onNavigateToPulse={() => setActiveTab("pulse")}
-            onNavigateToCheckIn={() => handleStartBooking(selectedClinic)}
+            onNavigateToCheckIn={() => setActiveTab("checkin")}
             onNavigateToClinics={() => setActiveTab("clinics")}
             onNavigateToHistory={() => setActiveTab("history")}
             onNavigateToAppointments={() => setActiveTab("appointments")}
-            onSelectClinic={handleOpenClinicDetail}
+            onNavigateToBilling={() => setActiveTab("billing")}
+            onNavigateToProfile={() => setActiveTab("profile")}
+            onSelectClinic={handleJoinQueueAtClinic}
             onOpenEntryModal={() => setIsEntryModalOpen(true)}
           />
         );
@@ -164,7 +171,7 @@ export const PatientShell: React.FC<PatientShellProps> = ({
           <SanctuaryPulseView
             token={activeToken}
             onBack={() => setActiveTab("home")}
-            onNavigateToCheckIn={() => handleStartBooking(selectedClinic)}
+            onNavigateToCheckIn={() => setActiveTab("checkin")}
           />
         );
       case "checkin":
@@ -172,13 +179,14 @@ export const PatientShell: React.FC<PatientShellProps> = ({
           <PatientCheckIn
             onTokenCreated={handleTokenCreated}
             initialClinicId={selectedClinic.id}
+            patient={currentPatient}
           />
         );
       case "clinics":
         return (
           <FindClinicView
             onSelectClinic={handleOpenClinicDetail}
-            onJoinQueue={handleStartBooking}
+            onJoinQueue={handleJoinQueueAtClinic}
           />
         );
       case "clinic_detail":
@@ -186,7 +194,7 @@ export const PatientShell: React.FC<PatientShellProps> = ({
           <ClinicDetailView
             clinic={selectedClinic}
             onBack={() => setActiveTab("home")}
-            onJoinQueue={handleStartBooking}
+            onJoinQueue={handleJoinQueueAtClinic}
           />
         );
       case "booking":
@@ -211,11 +219,13 @@ export const PatientShell: React.FC<PatientShellProps> = ({
             token={activeToken}
             patient={currentPatient}
             onNavigateToPulse={() => setActiveTab("pulse")}
-            onNavigateToCheckIn={() => handleStartBooking(selectedClinic)}
+            onNavigateToCheckIn={() => setActiveTab("checkin")}
             onNavigateToClinics={() => setActiveTab("clinics")}
             onNavigateToHistory={() => setActiveTab("history")}
             onNavigateToAppointments={() => setActiveTab("appointments")}
-            onSelectClinic={handleOpenClinicDetail}
+            onNavigateToBilling={() => setActiveTab("billing")}
+            onNavigateToProfile={() => setActiveTab("profile")}
+            onSelectClinic={handleJoinQueueAtClinic}
             onOpenEntryModal={() => setIsEntryModalOpen(true)}
           />
         );

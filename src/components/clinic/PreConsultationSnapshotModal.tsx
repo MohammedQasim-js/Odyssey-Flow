@@ -3,7 +3,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, FileText, Share2, 
   Stethoscope, X, ChevronRight, Sparkles, ShieldAlert, 
   ArrowRight, User, Plus, TrendingDown, Layers, Eye, 
-  Check, ExternalLink, Calendar, RefreshCw
+  Check, ExternalLink, Calendar, RefreshCw, Lock
 } from 'lucide-react';
 import { Token, Patient, Referral } from '../../types';
 import { DataStore } from '../../services/dataStore';
@@ -89,6 +89,7 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
   const visits = DataStore.getVisits(patient.id);
   const events = DataStore.getDiagnosticEvents(patient.id);
   const symptoms = DataStore.getSymptoms(patient.id);
+  const isConsentDeclined = token.consent_status === 'declined' || patient.consent_status === 'declined';
 
   // Standard patient header details
   const patientName = patient.fullName || 'Aarav Mehta';
@@ -334,29 +335,39 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                       2. Previous Relevant Events
                     </h3>
                   </div>
-                  <div className="space-y-2 text-xs">
-                    <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1.5">
-                      <div className="flex justify-between font-semibold text-stone-900">
-                        <span>General Medicine Consult</span>
-                        <span className="font-mono text-stone-400">Jan 2024</span>
-                      </div>
-                      <p className="text-stone-600">Prescribed analgesics; tension headache presumptive diagnosis.</p>
+                  {isConsentDeclined ? (
+                    <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-center text-xs text-stone-500 space-y-1.5">
+                      <Lock className="w-4 h-4 mx-auto text-stone-400" />
+                      <strong className="block text-stone-700">Historical Records Withheld</strong>
+                      <p className="text-[11px] text-stone-500 leading-relaxed">
+                        Patient opted out of cross-facility longitudinal record sharing during intake.
+                      </p>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1.5">
-                      <div className="flex justify-between font-semibold text-stone-900">
-                        <span>Neurology Review</span>
-                        <span className="font-mono text-stone-400">Feb 2024</span>
+                  ) : (
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1.5">
+                        <div className="flex justify-between font-semibold text-stone-900">
+                          <span>General Medicine Consult</span>
+                          <span className="font-mono text-stone-400">Jan 2024</span>
+                        </div>
+                        <p className="text-stone-600">Prescribed analgesics; tension headache presumptive diagnosis.</p>
                       </div>
-                      <p className="text-stone-600">Normal cranial exam; advised imaging if symptoms persist.</p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1.5">
-                      <div className="flex justify-between font-semibold text-stone-900">
-                        <span>ENT &amp; Sinus Clinic</span>
-                        <span className="font-mono text-stone-400">Apr 2024</span>
+                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1.5">
+                        <div className="flex justify-between font-semibold text-stone-900">
+                          <span>Neurology Review</span>
+                          <span className="font-mono text-stone-400">Feb 2024</span>
+                        </div>
+                        <p className="text-stone-600">Normal cranial exam; advised imaging if symptoms persist.</p>
                       </div>
-                      <p className="text-stone-600">Endoscopy normal; sinus involvement definitively ruled out.</p>
+                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1.5">
+                        <div className="flex justify-between font-semibold text-stone-900">
+                          <span>ENT &amp; Sinus Clinic</span>
+                          <span className="font-mono text-stone-400">Apr 2024</span>
+                        </div>
+                        <p className="text-stone-600">Endoscopy normal; sinus involvement definitively ruled out.</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* 3. Recent Investigations (4 cols) */}
@@ -367,31 +378,41 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                       3. Recent Investigations
                     </h3>
                   </div>
-                  <div className="space-y-2 text-xs">
-                    <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-[11px] space-y-1">
-                      <div className="flex justify-between font-bold text-amber-950">
-                        <span>Repeat MRI Brain (Plain)</span>
-                        <span className="font-mono text-amber-800">May 2024</span>
-                      </div>
-                      <p className="text-amber-900">
-                        <strong className="text-amber-950">Duplicate Scan:</strong> No structural intracranial abnormality detected. No contrast utilized.
+                  {isConsentDeclined ? (
+                    <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-center text-xs text-stone-500 space-y-1.5">
+                      <Lock className="w-4 h-4 mx-auto text-stone-400" />
+                      <strong className="block text-stone-700">Prior Scans Withheld</strong>
+                      <p className="text-[11px] text-stone-500 leading-relaxed">
+                        No cross-facility scans or lab reports authorized for review.
                       </p>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1">
-                      <div className="flex justify-between font-bold text-stone-900">
-                        <span>MRI Brain (Initial)</span>
-                        <span className="font-mono text-stone-400">Mar 2024</span>
+                  ) : (
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-[11px] space-y-1">
+                        <div className="flex justify-between font-bold text-amber-950">
+                          <span>Repeat MRI Brain (Plain)</span>
+                          <span className="font-mono text-amber-800">May 2024</span>
+                        </div>
+                        <p className="text-amber-900">
+                          <strong className="text-amber-950">Duplicate Scan:</strong> No structural intracranial abnormality detected. No contrast utilized.
+                        </p>
                       </div>
-                      <p className="text-stone-600">Normal parenchyma; non-contributory for cephalalgia etiology.</p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1">
-                      <div className="flex justify-between font-bold text-stone-900">
-                        <span>Complete Blood &amp; Metabolic Panel</span>
-                        <span className="font-mono text-stone-400">Jan 2024</span>
+                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1">
+                        <div className="flex justify-between font-bold text-stone-900">
+                          <span>MRI Brain (Initial)</span>
+                          <span className="font-mono text-stone-400">Mar 2024</span>
+                        </div>
+                        <p className="text-stone-600">Normal parenchyma; non-contributory for cephalalgia etiology.</p>
                       </div>
-                      <p className="text-stone-600">ESR 14 mm/hr; standard biochemical indices within physiological norms.</p>
+                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] space-y-1">
+                        <div className="flex justify-between font-bold text-stone-900">
+                          <span>Complete Blood &amp; Metabolic Panel</span>
+                          <span className="font-mono text-stone-400">Jan 2024</span>
+                        </div>
+                        <p className="text-stone-600">ESR 14 mm/hr; standard biochemical indices within physiological norms.</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
               </div>
@@ -412,15 +433,21 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                   </div>
 
                   {/* Previous Clinician Note */}
-                  <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-700 space-y-1">
-                    <div className="flex justify-between text-stone-500 font-medium">
-                      <span>Prior Note (Dr. Gupta, Medicine)</span>
-                      <span>Encounter 5</span>
+                  {isConsentDeclined ? (
+                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-500 italic">
+                      Prior cross-facility clinical notes unavailable (consent declined).
                     </div>
-                    <p className="italic">
-                      "Patient continues to experience recalcitrant tension-type headache. Has consulted ENT and Ophthalmology without resolution. Suggest multidisciplinary panel or specialized neurovascular assessment."
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-700 space-y-1">
+                      <div className="flex justify-between text-stone-500 font-medium">
+                        <span>Prior Note (Dr. Gupta, Medicine)</span>
+                        <span>Encounter 5</span>
+                      </div>
+                      <p className="italic">
+                        "Patient continues to experience recalcitrant tension-type headache. Has consulted ENT and Ophthalmology without resolution. Suggest multidisciplinary panel or specialized neurovascular assessment."
+                      </p>
+                    </div>
+                  )}
 
                   {/* Live Active Note Form */}
                   <div className="space-y-2 pt-1">
@@ -459,31 +486,42 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                         5. Journey Summary
                       </h3>
                     </div>
-                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                      DPS: 63 / 100 • ↓ Stagnating
+                    <span className="text-xs font-mono font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+                      {isConsentDeclined ? 'Single Encounter Mode' : 'DPS: 63 / 100 • ↓ Stagnating'}
                     </span>
                   </div>
 
                   <div className="space-y-3 text-xs">
-                    <p className="text-stone-700 leading-relaxed text-xs">
-                      The patient has undergone <strong>6 clinical encounters</strong> across <strong>3 medical specialties</strong> over <strong>7 months</strong> without diagnostic resolution. Two repeated non-contrast MRI scans yielded no explanatory findings.
-                    </p>
+                    {isConsentDeclined ? (
+                      <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 space-y-2 text-stone-600">
+                        <strong className="text-stone-800 block text-xs">Longitudinal Tracking Suspended</strong>
+                        <p className="text-[11px] text-stone-500 leading-relaxed">
+                          Patient opted out of cross-facility history during check-in. Longitudinal diagnostic stagnation metric (DPS) and historical factors are withheld.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-stone-700 leading-relaxed text-xs">
+                          The patient has undergone <strong>6 clinical encounters</strong> across <strong>3 medical specialties</strong> over <strong>7 months</strong> without diagnostic resolution. Two repeated non-contrast MRI scans yielded no explanatory findings.
+                        </p>
 
-                    <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
-                        Recommended Next Step
-                      </span>
-                      <p className="text-xs text-stone-900 font-medium">
-                        Escalate for Multidisciplinary Review in Neurology to initiate high-resolution neurovascular contrast imaging and break diagnostic stagnation.
-                      </p>
-                      <button
-                        onClick={() => setShowReferralModal(true)}
-                        className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all shadow-2xs flex items-center justify-center space-x-1.5"
-                      >
-                        <Share2 className="w-3.5 h-3.5 text-stone-950" />
-                        <span>Escalate for Multidisciplinary Review</span>
-                      </button>
-                    </div>
+                        <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
+                            Recommended Next Step
+                          </span>
+                          <p className="text-xs text-stone-900 font-medium">
+                            Escalate for Multidisciplinary Review in Neurology to initiate high-resolution neurovascular contrast imaging and break diagnostic stagnation.
+                          </p>
+                          <button
+                            onClick={() => setShowReferralModal(true)}
+                            className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all shadow-2xs flex items-center justify-center space-x-1.5"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-stone-950" />
+                            <span>Escalate for Multidisciplinary Review</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
 
                     <div className="text-right">
                       <button
@@ -499,9 +537,86 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
               </div>
 
             </div>
+          ) : isConsentDeclined ? (
+            /* ========================================================
+                CONSENT DECLINED: SINGLE-VISIT INTAKE SNAPSHOT
+            ======================================================== */
+            <div className="space-y-6">
+              {/* Privacy Notice Banner */}
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start space-x-3 text-amber-900">
+                <ShieldAlert className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                    Longitudinal Record Sharing Declined by Patient
+                  </h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Patient opted out of cross-facility longitudinal records during check-in. Historical encounters, past scans, prior clinical notes, and longitudinal DPS calculations are withheld. Showing intake symptoms and consultation actions for today's visit only.
+                  </p>
+                </div>
+              </div>
+
+              {/* Two Column Layout for Intake Only */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left: Today's Intake Data */}
+                <div className="lg:col-span-7 space-y-5">
+                  <div className="bg-white rounded-2xl p-5 border border-stone-200/80 shadow-2xs space-y-4">
+                    <div className="flex items-center space-x-2 border-b border-stone-100 pb-2.5">
+                      <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
+                        Today's Intake Symptoms &amp; Notes
+                      </h3>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-stone-400 block">Reported Reason for Visit</span>
+                      <p className="text-sm font-bold text-stone-900">{currentConcern}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                        <span className="text-[10px] uppercase font-semibold text-stone-400 block">Assigned Department</span>
+                        <strong className="text-stone-900 block mt-0.5">{token.department || token.specialty || 'General Medicine'}</strong>
+                      </div>
+                      <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                        <span className="text-[10px] uppercase font-semibold text-stone-400 block">Queue Position</span>
+                        <strong className="text-stone-900 block mt-0.5">#{token.queuePosition} in line</strong>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-600 flex items-center space-x-2">
+                      <Lock className="w-4 h-4 text-stone-400 shrink-0" />
+                      <span>Cross-facility history withheld per patient privacy choice.</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="lg:col-span-5 space-y-5">
+                  <div className="bg-white rounded-2xl p-5 border border-stone-200/80 shadow-2xs space-y-4">
+                    <div className="border-b border-stone-100 pb-2.5">
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
+                        Clinical Actions
+                      </h4>
+                    </div>
+
+                    <button
+                      onClick={handleStartConsultationClick}
+                      className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2"
+                    >
+                      <Stethoscope className="w-4 h-4" />
+                      <span>Start Consultation</span>
+                    </button>
+
+                    <p className="text-[11px] text-stone-400 text-center">
+                      Opens active consultation workspace and live note taker.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             /* ========================================================
-                PRE-CONSULTATION SNAPSHOT OVERVIEW
+                PRE-CONSULTATION SNAPSHOT OVERVIEW (CONSENT GRANTED)
             ======================================================== */
             <div className="space-y-6">
 

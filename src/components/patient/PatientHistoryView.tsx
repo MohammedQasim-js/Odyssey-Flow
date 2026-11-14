@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Calendar, CheckCircle2, Clock, ChevronRight, ChevronDown, 
   MapPin, Stethoscope, ArrowRight, ShieldCheck, User, 
-  Building2, Activity, Sparkles, FileText, Check, X
+  Building2, Activity, Sparkles, FileText, Check, X, Lock
 } from 'lucide-react';
 import { DataStore } from '../../services/dataStore';
 import { Patient, Referral } from '../../types';
@@ -126,6 +126,19 @@ export const PatientHistoryView: React.FC<PatientHistoryViewProps> = ({ patient:
           A simple view of your visits and care progress.
         </p>
       </div>
+
+      {/* Consent Declined Notice */}
+      {patient.consent_status === 'declined' && (
+        <div className="p-4 rounded-3xl bg-amber-50 border border-amber-200/90 text-amber-900 text-xs flex items-start space-x-3">
+          <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div>
+            <strong className="block text-amber-950 font-bold">Longitudinal Record Sharing Declined</strong>
+            <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+              You chose not to share previous cross-facility clinical records during intake. Historical records are not loaded or shared with consulting physicians.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. Journey Header Summary Card */}
       <div 
