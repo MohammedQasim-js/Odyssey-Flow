@@ -37,7 +37,7 @@ export const ClinicSettingsView: React.FC = () => {
     <div className="max-w-4xl space-y-6">
       
       {/* Header */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <Settings className="w-5 h-5 text-stone-700" />
@@ -62,7 +62,7 @@ export const ClinicSettingsView: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-6">
         
         {/* Clinic Identity & Address */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center space-x-2 pb-2 border-b border-stone-100">
             <Building2 className="w-4 h-4 text-emerald-700" />
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
@@ -142,7 +142,7 @@ export const ClinicSettingsView: React.FC = () => {
         </div>
 
         {/* Consultation Windows & Policy */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center space-x-2 pb-2 border-b border-stone-100">
             <Clock className="w-4 h-4 text-emerald-700" />
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
@@ -212,7 +212,7 @@ export const ClinicSettingsView: React.FC = () => {
         </div>
 
         {/* Pulse & Notifications */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center space-x-2 pb-2 border-b border-stone-100">
             <HeartPulse className="w-4 h-4 text-emerald-700" />
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">

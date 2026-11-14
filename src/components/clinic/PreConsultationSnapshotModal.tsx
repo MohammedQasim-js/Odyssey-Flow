@@ -189,7 +189,7 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
         {/* ========================================================
             PATIENT HEADER
         ======================================================== */}
-        <div className="bg-white px-6 py-5 border-b border-stone-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+        <div className="bg-white px-4 sm:px-6 py-3.5 sm:py-5 border-b border-stone-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
           
           <div className="flex items-start sm:items-center space-x-4">
             {/* Avatar */}
@@ -254,7 +254,7 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
         </div>
 
         {/* Modal Body Scroll Container */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
 
           {/* ========================================================
               ACTIVE CONSULTATION WORKSPACE (If consultation is in progress)

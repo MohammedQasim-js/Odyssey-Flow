@@ -176,7 +176,7 @@ export const PatientQuickViewDrawer: React.FC<PatientQuickViewDrawerProps> = ({
         {/* ======================================================== */}
         {/* DRAWER HEADER (Exact Specs) */}
         {/* ======================================================== */}
-        <div className="p-6 border-b border-stone-100 sticky top-0 bg-white/95 backdrop-blur-md z-10 space-y-4">
+        <div className="p-4 sm:p-6 border-b border-stone-100 sticky top-0 bg-white/95 backdrop-blur-md z-10 space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3.5">
               {/* Avatar */}
@@ -238,7 +238,7 @@ export const PatientQuickViewDrawer: React.FC<PatientQuickViewDrawerProps> = ({
         {/* ======================================================== */}
         {/* DRAWER BODY */}
         {/* ======================================================== */}
-        <div className="p-6 space-y-5 flex-1 divide-y divide-stone-100">
+        <div className="p-4 sm:p-6 space-y-5 flex-1 divide-y divide-stone-100">
           
           {/* 1. VISIT DETAILS (Exact Specs: Concern, Doctor, Specialty, Pos, Ahead, Wait) */}
           <div className="space-y-3 pt-0">
@@ -426,7 +426,7 @@ export const PatientQuickViewDrawer: React.FC<PatientQuickViewDrawerProps> = ({
         {/* ======================================================== */}
         {/* DRAWER ACTIONS (Exact Specs: Call Patient primary, Snapshot, Records, Skip) */}
         {/* ======================================================== */}
-        <div className="p-6 border-t border-stone-200/80 bg-stone-50/90 space-y-2 sticky bottom-0 z-10">
+        <div className="p-4 sm:p-6 border-t border-stone-200/80 bg-stone-50/90 space-y-2 sticky bottom-0 z-10">
           
           {/* Primary Action: "Call Patient" (or Start / Complete if already in flow) */}
           {isWaiting && (

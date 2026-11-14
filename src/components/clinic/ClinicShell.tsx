@@ -47,6 +47,7 @@ export const ClinicShell: React.FC<ClinicShellProps> = ({
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>('pat_aarav_0');
   const [activeSnapshotToken, setActiveSnapshotToken] = useState<Token | null>(null);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [localQueue, setLocalQueue] = useState<Token[]>(queue);
 
@@ -205,6 +206,7 @@ export const ClinicShell: React.FC<ClinicShellProps> = ({
       <ClinicTopBar
         onOpenNewModal={() => setIsNewPatientModalOpen(true)}
         onOpenSnapshotForAarav={handleOpenSnapshotForAarav}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         onSearchQuery={(q) => {
           if ((q || '').toLowerCase().includes('a-27') || (q || '').toLowerCase().includes('aarav')) {
             handleOpenSnapshotForAarav();
@@ -212,7 +214,7 @@ export const ClinicShell: React.FC<ClinicShellProps> = ({
         }}
       />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-w-0">
         
         {/* Left Sidebar with Exact 4 Groups */}
         <ClinicSidebar
@@ -220,10 +222,12 @@ export const ClinicShell: React.FC<ClinicShellProps> = ({
           onSelectTab={setActiveTab}
           waitingCount={waitingCount}
           stagnantCount={stagnantCount}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 min-w-0 overflow-y-auto max-w-7xl mx-auto w-full">
           {renderContent()}
         </main>
 

@@ -18,7 +18,7 @@ export const StaffShiftsView: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 border border-stone-200/80 shadow-xs flex items-center justify-between">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
             <h2 className="text-xl font-bold text-stone-900 tracking-tight">Staff &amp; Shifts Management</h2>

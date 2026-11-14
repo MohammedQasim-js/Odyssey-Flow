@@ -276,7 +276,7 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
         <div className="space-y-6">
           
           {/* JOURNEY HERO SECTION */}
-          <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               
               {/* Title and Subtitle */}
@@ -295,50 +295,50 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
               </div>
 
               {/* Core Journey Metrics & DPS Hero Score */}
-              <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full lg:w-auto justify-between lg:justify-end">
                 
                 {/* 3 Metrics: Journey Duration, Encounters, Specialties */}
-                <div className="flex items-center space-x-4 bg-stone-50 p-3 rounded-2xl border border-stone-200/80">
-                  <div className="text-center px-2">
+                <div className="flex items-center space-x-2 sm:space-x-4 bg-stone-50 p-2.5 sm:p-3 rounded-2xl border border-stone-200/80">
+                  <div className="text-center px-1 sm:px-2">
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
                       Journey Duration
                     </span>
-                    <span className="font-mono font-extrabold text-stone-900 text-sm">
+                    <span className="font-mono font-extrabold text-stone-900 text-xs sm:text-sm">
                       7 months
                     </span>
                   </div>
 
                   <div className="w-px h-8 bg-stone-200"></div>
 
-                  <div className="text-center px-2">
+                  <div className="text-center px-1 sm:px-2">
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
                       Encounters
                     </span>
-                    <span className="font-mono font-extrabold text-stone-900 text-sm">
+                    <span className="font-mono font-extrabold text-stone-900 text-xs sm:text-sm">
                       6
                     </span>
                   </div>
 
                   <div className="w-px h-8 bg-stone-200"></div>
 
-                  <div className="text-center px-2">
+                  <div className="text-center px-1 sm:px-2">
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
                       Specialties
                     </span>
-                    <span className="font-mono font-extrabold text-stone-900 text-sm">
+                    <span className="font-mono font-extrabold text-stone-900 text-xs sm:text-sm">
                       3
                     </span>
                   </div>
                 </div>
 
                 {/* Primary Visual Anchor: Diagnostic Progress Score (DPS) + Trend */}
-                <div className="bg-amber-50/70 border border-amber-300 p-3.5 rounded-2xl flex items-center space-x-4 shadow-2xs">
+                <div className="bg-amber-50/70 border border-amber-300 p-2.5 sm:p-3.5 rounded-2xl flex items-center space-x-3 sm:space-x-4 shadow-2xs">
                   <div>
                     <span className="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider block">
                       Diagnostic Progress Score
                     </span>
                     <div className="flex items-baseline space-x-1.5 mt-0.5">
-                      <span className="text-2xl font-mono font-black text-amber-950">
+                      <span className="text-xl sm:text-2xl font-mono font-black text-amber-950">
                         63
                       </span>
                       <span className="text-xs font-mono font-bold text-amber-800">
@@ -347,7 +347,7 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pl-3 border-l border-amber-200">
+                  <div className="pl-2.5 sm:pl-3 border-l border-amber-200">
                     <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
                       Trend
                     </span>

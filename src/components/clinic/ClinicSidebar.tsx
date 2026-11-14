@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, Clock, Calendar, UserCheck, 
   BarChart3, Receipt, Settings, Shield, Activity, 
   DollarSign, Briefcase, Pill, Sparkles, AlertTriangle, 
-  Layers, FileText
+  Layers, FileText, X 
 } from 'lucide-react';
 
 export type ClinicTab = 
@@ -26,6 +26,8 @@ interface ClinicSidebarProps {
   onSelectTab: (tab: ClinicTab) => void;
   waitingCount: number;
   stagnantCount: number;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const ClinicSidebar: React.FC<ClinicSidebarProps> = ({
@@ -33,6 +35,8 @@ export const ClinicSidebar: React.FC<ClinicSidebarProps> = ({
   onSelectTab,
   waitingCount,
   stagnantCount,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
   const sections = [
     {
@@ -80,20 +84,37 @@ export const ClinicSidebar: React.FC<ClinicSidebarProps> = ({
     },
   ];
 
-  return (
-    <aside className="w-64 bg-white border-r border-stone-200/80 flex flex-col justify-between p-4 shrink-0 h-[calc(100vh-3.75rem)] sticky top-[3.75rem] overflow-y-auto">
-      
-      <div className="space-y-5">
-        
+  const handleTabClick = (tabId: ClinicTab) => {
+    onSelectTab(tabId);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const renderNavContent = (isMobileDrawer: boolean) => (
+    <>
+      <div className="space-y-4">
         {/* Clinic Location Badge */}
-        <div className="px-3.5 py-2.5 rounded-2xl bg-stone-50 border border-stone-200/70">
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-            <span className="text-xs font-bold text-stone-900 truncate">Odyssey Apex Care</span>
+        <div className="px-3.5 py-2.5 rounded-2xl bg-stone-50 border border-stone-200/70 flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+              <span className="text-xs font-bold text-stone-900 truncate">Odyssey Apex Care</span>
+            </div>
+            <span className="text-[11px] text-stone-500 block mt-0.5 truncate">
+              Suite 101-106 • Command Center
+            </span>
           </div>
-          <span className="text-[11px] text-stone-500 block mt-0.5 truncate">
-            Suite 101-106 • Command Center
-          </span>
+
+          {isMobileDrawer && onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-200/60"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Grouped Navigation */}
@@ -110,11 +131,11 @@ export const ClinicSidebar: React.FC<ClinicSidebarProps> = ({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onSelectTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left ${
+                    onClick={() => handleTabClick(item.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 sm:py-2 min-h-[40px] sm:min-h-0 rounded-xl text-xs font-semibold transition-all text-left ${
                       isActive
                         ? 'bg-stone-900 text-white font-bold shadow-2xs'
-                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900 active:bg-stone-100'
                     }`}
                   >
                     <div className="flex items-center space-x-2.5 min-w-0">
@@ -142,7 +163,6 @@ export const ClinicSidebar: React.FC<ClinicSidebarProps> = ({
             </div>
           ))}
         </div>
-
       </div>
 
       {/* Bottom Health Indicator, Help & Operator Profile */}
@@ -186,7 +206,32 @@ export const ClinicSidebar: React.FC<ClinicSidebarProps> = ({
           </div>
         </div>
       </div>
+    </>
+  );
 
-    </aside>
+  return (
+    <>
+      {/* Desktop Persistent Sidebar (>= 1024px) */}
+      <aside className="hidden lg:flex w-64 bg-white border-r border-stone-200/80 flex-col justify-between p-4 shrink-0 h-[calc(100vh-3.75rem)] sticky top-[3.75rem] overflow-y-auto">
+        {renderNavContent(false)}
+      </aside>
+
+      {/* Mobile/Tablet Slide-over Drawer (< 1024px) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-stone-950/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={onCloseMobile}
+            aria-hidden="true"
+          />
+
+          {/* Drawer Content */}
+          <div className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col justify-between p-4 overflow-y-auto z-10 animate-in slide-in-from-left duration-200">
+            {renderNavContent(true)}
+          </div>
+        </div>
+      )}
+    </>
   );
 };

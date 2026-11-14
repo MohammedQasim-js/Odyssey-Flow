@@ -197,10 +197,10 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
       </div>
 
       {/* 1. Header Area: Greeting & Live Queue State Bar */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-extrabold text-stone-900 tracking-tight">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 tracking-tight">
               Good morning, Clinical Operations Team
             </h2>
             <span
@@ -220,10 +220,10 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
         </div>
 
         {/* Global Operational Queue Actions */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <button
             onClick={handleRebalanceDPS}
-            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-all"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 text-xs font-bold shadow-xs flex items-center justify-center space-x-1.5 transition-all"
             title="Reorder queue by Diagnostic Progress Score to prioritize stagnating complex cases"
           >
             <Zap className="w-4 h-4 text-stone-950" />
@@ -232,7 +232,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
 
           <button
             onClick={handlePauseToggle}
-            className={`px-3.5 py-2.5 rounded-2xl border text-xs font-bold flex items-center space-x-1.5 transition-all ${
+            className={`flex-1 sm:flex-none px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all ${
               isPaused
                 ? "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
                 : "bg-white border-stone-300 text-stone-700 hover:bg-stone-50"
@@ -248,7 +248,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
 
           <button
             onClick={handleCallNext}
-            className="px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-all"
+            className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-xs font-bold shadow-xs flex items-center justify-center space-x-1.5 transition-all"
           >
             <Stethoscope className="w-4 h-4 text-emerald-400" />
             <span>
@@ -260,7 +260,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
 
       {/* 2. Pre-Consultation Alert (Prominent Clinical Stagnation Banner) */}
       {aaravToken && aaravToken.stagnationFlag && (
-        <div className="p-5 rounded-3xl bg-amber-50/80 border border-amber-300/80 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-200">
+        <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/80 border border-amber-300/80 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-200">
           <div className="flex items-start space-x-3.5 min-w-0">
             <div className="w-10 h-10 rounded-2xl bg-amber-500 text-stone-950 flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
               <AlertTriangle className="w-5 h-5" />
@@ -290,7 +290,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
           <div className="flex items-center space-x-2 shrink-0 w-full md:w-auto">
             <button
               onClick={() => onOpenSnapshot(aaravToken)}
-              className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-all w-full md:w-auto justify-center"
+              className="flex-1 md:flex-none px-3.5 sm:px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-all justify-center"
             >
               <Eye className="w-3.5 h-3.5 text-emerald-400" />
               <span>Open Clinical Snapshot</span>
@@ -309,7 +309,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
       )}
 
       {/* 3. KPI Row: 5 Core Healthcare Operations Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {/* 1. Active Queue */}
         <div className="p-5 rounded-3xl bg-white border border-stone-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
@@ -438,7 +438,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
       {/* 4. Primary Area: Live Patient Flow (8 cols) & Sanctuary Pulse Clinic View (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: "Live Patient Flow" (8 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="lg:col-span-8 bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
             <div>
               <div className="flex items-center space-x-2">
@@ -521,7 +521,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
           </div>
 
           {/* Table Container */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-w-0">
             <table className="w-full min-w-[1040px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 text-stone-400 font-extrabold uppercase text-[10px] tracking-wider">
@@ -766,8 +766,8 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
         </div>
 
         {/* Right: Signature Card: "Sanctuary Pulse" (4 cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="lg:col-span-4 space-y-4 min-w-0">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
             {/* Sanctuary Pulse Card Header */}
             <div className="flex items-center justify-between pb-2 border-b border-stone-100">
               <div className="flex items-center space-x-2">
@@ -999,7 +999,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
       {/* 5. Secondary Row: Queue Health, Diagnostic Journey Insights, Peak Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Card 1: Queue Health & Velocity */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
             <div className="flex items-center space-x-2">
               <Activity className="w-4 h-4 text-emerald-600" />
@@ -1096,7 +1096,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
         </div>
 
         {/* Card 2: Diagnostic Journey Insights */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
             <div className="flex items-center space-x-2">
               <Layers className="w-4 h-4 text-amber-600" />
@@ -1176,7 +1176,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
         </div>
 
         {/* Card 3: Peak Activity & Flow Pacing */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
             <div className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4 text-blue-600" />
@@ -1262,7 +1262,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
       </div>
 
       {/* 6. Lower Section: Clinical Attention (Patients Requiring Review / Multidisciplinary Escalation) */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
           <div>
             <div className="flex items-center space-x-2">
@@ -1290,10 +1290,10 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
         {/* Detailed Flagged Patients Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Spotlight Patient: Aarav Mehta (A-27) */}
-          <div className="p-5 rounded-3xl bg-amber-50/40 border border-amber-300/80 space-y-3 relative overflow-hidden">
+          <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/40 border border-amber-300/80 space-y-3 relative overflow-hidden">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap">
                   <span className="font-mono font-black text-sm px-2 py-0.5 rounded-lg bg-stone-900 text-white">
                     {aaravToken ? aaravToken.tokenNumber : "A-27"}
                   </span>
@@ -1310,7 +1310,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                 </p>
               </div>
 
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-950">
                   DPS 63/100
                 </span>
@@ -1344,7 +1344,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
             </div>
 
             {/* Actions for Aarav Mehta */}
-            <div className="flex items-center space-x-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 onClick={() => aaravToken && onOpenSnapshot(aaravToken)}
                 className="px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-all"
@@ -1374,10 +1374,10 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
           </div>
 
           {/* Secondary Flagged Case: Token C-08 (Meera Patel) */}
-          <div className="p-5 rounded-3xl bg-stone-50 border border-stone-200/80 space-y-3 relative overflow-hidden">
+          <div className="p-4 sm:p-5 rounded-3xl bg-stone-50 border border-stone-200/80 space-y-3 relative overflow-hidden">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap">
                   <span className="font-mono font-black text-sm px-2 py-0.5 rounded-lg bg-stone-200 text-stone-900">
                     C-08
                   </span>
@@ -1394,7 +1394,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                 </p>
               </div>
 
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900">
                   DPS 58/100
                 </span>
@@ -1425,7 +1425,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
             </div>
 
             {/* Actions for Meera */}
-            <div className="flex items-center space-x-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 onClick={() => {
                   const target =

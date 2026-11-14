@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Search, Bell, Plus, Calendar, ShieldCheck, ChevronDown, 
-  User, CheckCircle2, AlertTriangle, Clock, Stethoscope, Building2
+  User, CheckCircle2, AlertTriangle, Clock, Stethoscope, Building2, Menu
 } from 'lucide-react';
 import { Doctor } from '../../types';
 import { DataStore } from '../../services/dataStore';
@@ -10,12 +10,14 @@ interface ClinicTopBarProps {
   onOpenNewModal: () => void;
   onSearchQuery?: (q: string) => void;
   onOpenSnapshotForAarav?: () => void;
+  onToggleMobileSidebar?: () => void;
 }
 
 export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
   onOpenNewModal,
   onSearchQuery,
   onOpenSnapshotForAarav,
+  onToggleMobileSidebar,
 }) => {
   const [search, setSearch] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -52,33 +54,46 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-stone-200/80 px-6 py-3 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+    <header className="bg-white border-b border-stone-200/80 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
       
-      {/* Clinic Name & Today's Date */}
-      <div className="flex items-center space-x-4 min-w-[280px]">
-        <div className="w-10 h-10 rounded-xl bg-stone-900 text-emerald-400 flex items-center justify-center font-black text-lg shadow-xs">
+      {/* Left: Mobile Menu Toggle + Clinic Brand & Date */}
+      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+        {onToggleMobileSidebar && (
+          <button
+            type="button"
+            onClick={onToggleMobileSidebar}
+            className="lg:hidden p-2 -ml-1 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition-colors shrink-0"
+            aria-label="Toggle Navigation Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-stone-900 text-emerald-400 flex items-center justify-center font-black text-sm sm:text-lg shadow-xs shrink-0">
           O
         </div>
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-sm font-extrabold text-stone-900 tracking-tight flex items-center space-x-1.5">
+
+        <div className="min-w-0">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <h1 className="text-xs sm:text-sm font-extrabold text-stone-900 tracking-tight truncate max-w-[150px] sm:max-w-xs md:max-w-none">
               <span>{settings.clinicName}</span>
             </h1>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
           </div>
-          <div className="flex items-center space-x-2 text-[11px] text-stone-500 font-medium">
+
+          <div className="hidden sm:flex items-center space-x-2 text-[11px] text-stone-500 font-medium">
             <span className="flex items-center space-x-1">
-              <Calendar className="w-3 h-3 text-stone-400" />
+              <Calendar className="w-3 h-3 text-stone-400 shrink-0" />
               <span>Tuesday, September 8, 2026</span>
             </span>
             <span>•</span>
-            <span className="text-emerald-700 font-semibold">Live Operational Sync</span>
+            <span className="text-emerald-700 font-semibold truncate">Live Operational Sync</span>
           </div>
         </div>
       </div>
 
       {/* Center Search Input */}
-      <div className="flex-1 max-w-md mx-6 hidden md:block">
+      <div className="flex-1 max-w-md mx-3 lg:mx-6 hidden md:block">
         <div className="relative">
           <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -92,12 +107,12 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
       </div>
 
       {/* Right Controls: Notifications, Profile, Quick Action */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
         
         {/* Quick Action: "+ New" */}
         <button
           onClick={onOpenNewModal}
-          className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-all"
+          className="px-2.5 sm:px-3.5 py-2 min-h-[36px] sm:min-h-[40px] rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-bold shadow-xs flex items-center space-x-1 sm:space-x-1.5 transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>+ New</span>
@@ -107,7 +122,7 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-9 h-9 rounded-xl border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition-all relative"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition-all relative"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
@@ -118,7 +133,7 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
 
           {/* Notifications Panel */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-stone-200 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-24px)] max-w-xs sm:w-80 bg-white rounded-2xl shadow-xl border border-stone-200 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-stone-100">
                 <span className="text-xs font-bold text-stone-900">Operational Alerts</span>
                 <span className="text-[10px] text-emerald-700 font-semibold cursor-pointer">Mark all read</span>
@@ -157,13 +172,13 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
         </div>
 
         {/* User Profile */}
-        <div className="flex items-center space-x-2.5 pl-2 border-l border-stone-200">
+        <div className="flex items-center space-x-2 sm:space-x-2.5 pl-1.5 sm:pl-2 border-l border-stone-200">
           <img
             src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150"
             alt="Dr. A. Sharma"
-            className="w-9 h-9 rounded-xl object-cover border border-stone-200 shadow-2xs"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover border border-stone-200 shadow-2xs shrink-0"
           />
-          <div className="hidden lg:block text-left">
+          <div className="hidden xl:block text-left">
             <span className="text-xs font-bold text-stone-900 block leading-tight">Dr. A. Sharma</span>
             <span className="text-[10px] text-stone-500 font-medium">Chief Medical Officer &amp; Admin</span>
           </div>

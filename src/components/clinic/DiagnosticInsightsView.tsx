@@ -206,7 +206,7 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
       {/* ========================================================
           1. HEADER & STRICT SAFETY / COMPLIANCE BANNER
       ======================================================== */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           
           <div className="space-y-1 max-w-2xl">
@@ -278,7 +278,7 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
       {/* ========================================================
           2. FIVE COMPACT KPI CARDS
       ======================================================== */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
         
         {/* 1. Active Journeys */}
         <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-2xs">
@@ -362,10 +362,10 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
       {/* ========================================================
           3. FOUR HIGH-CRAFT CLINICAL CHARTS
       ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         
         {/* CHART 1: DPS DISTRIBUTION */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
@@ -462,7 +462,7 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
         </div>
 
         {/* CHART 2: JOURNEY TREND */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
@@ -544,7 +544,7 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
         </div>
 
         {/* CHART 3: REFERRAL ACTIVITY */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
@@ -614,7 +614,7 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
         </div>
 
         {/* CHART 4: INVESTIGATION REDUNDANCY */}
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
@@ -688,10 +688,10 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
       {/* ========================================================
           4. PATIENT LIST: PATIENTS REQUIRING REVIEW
       ======================================================== */}
-      <div className="bg-white rounded-3xl border border-stone-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-3xl border border-stone-200/80 shadow-2xs overflow-hidden min-w-0">
         
         {/* Table Header & Quick Filters */}
-        <div className="p-5 border-b border-stone-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 border-b border-stone-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
@@ -764,7 +764,7 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
         </div>
 
         {/* Patients Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-w-0">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-stone-200 text-stone-400 font-extrabold uppercase text-[10px] tracking-wider bg-stone-50/60">

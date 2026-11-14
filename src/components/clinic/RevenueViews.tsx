@@ -28,7 +28,7 @@ export const RevenueViews: React.FC<RevenueViewsProps> = ({ viewMode }) => {
     <div className="space-y-6">
       
       {/* Top Banner */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             {viewMode === 'billing' && <Receipt className="w-5 h-5 text-emerald-700" />}
@@ -67,13 +67,13 @@ export const RevenueViews: React.FC<RevenueViewsProps> = ({ viewMode }) => {
 
       {/* View Content depending on mode */}
       {viewMode === 'billing' && (
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4 min-w-0">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
             Recent Patient Invoices &amp; Token Settlements
           </h3>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto min-w-0">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 text-stone-400 font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pl-2">Token</th>
@@ -110,7 +110,7 @@ export const RevenueViews: React.FC<RevenueViewsProps> = ({ viewMode }) => {
       )}
 
       {(viewMode === 'insurance' || viewMode === 'financials') && (
-        <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4 min-w-0">
           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
               Insurance Partner Pre-Authorizations &amp; Cashless Settlements
@@ -118,8 +118,8 @@ export const RevenueViews: React.FC<RevenueViewsProps> = ({ viewMode }) => {
             <span className="text-xs text-stone-500">Fast-track claims queue</span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto min-w-0">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 text-stone-400 font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pl-2">Claim ID</th>

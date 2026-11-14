@@ -40,7 +40,7 @@ export const DiagnosticJourneyHeader: React.FC<DiagnosticJourneyHeaderProps> = (
   const patientDisplayName = patient.fullName || patient.name || 'Patient';
 
   return (
-    <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs">
+    <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         
         {/* Left: Patient Avatar & Core Demographics */}

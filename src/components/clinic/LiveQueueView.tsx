@@ -259,10 +259,10 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header & Rebalance Action */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-extrabold text-stone-900 tracking-tight">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 tracking-tight">
               Live Smart Queue Command
             </h2>
             <span
@@ -284,10 +284,10 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
         </div>
 
         {/* Primary Operational Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <button
             onClick={onRebalanceDPS}
-            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold shadow-xs transition-all flex items-center space-x-1.5"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold shadow-xs transition-all flex items-center justify-center space-x-1.5"
           >
             <Zap className="w-4 h-4" />
             <span>Rebalance Queue by DPS</span>
@@ -295,7 +295,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
 
           <button
             onClick={handlePauseToggle}
-            className={`px-3.5 py-2.5 rounded-2xl border text-xs font-bold flex items-center space-x-1.5 transition-all ${
+            className={`flex-1 sm:flex-none px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all ${
               isPaused
                 ? "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
                 : "bg-white border-stone-300 text-stone-700 hover:bg-stone-50"
@@ -311,7 +311,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
 
           <button
             onClick={onAdvanceQueue}
-            className="px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-xs transition-all flex items-center space-x-1.5"
+            className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center space-x-1.5"
           >
             <Stethoscope className="w-4 h-4 text-emerald-400" />
             <span>Call Next</span>
@@ -480,9 +480,9 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded-3xl border border-stone-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-3xl border border-stone-200/80 shadow-2xs overflow-hidden min-w-0">
         {/* Table Top Bar with Quick Search & Filters */}
-        <div className="p-4 border-b border-stone-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+        <div className="p-3.5 sm:p-4 border-b border-stone-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-1">
             <button
               onClick={() => setFilter("all")}
@@ -570,7 +570,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-w-0">
             <table className="w-full min-w-[1180px] text-left text-xs text-stone-700">
               <thead className="bg-stone-50/70 border-b border-stone-200/80 text-[10px] font-extrabold text-stone-400 uppercase tracking-wider">
                 <tr>

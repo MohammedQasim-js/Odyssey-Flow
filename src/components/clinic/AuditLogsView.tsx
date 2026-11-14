@@ -92,7 +92,7 @@ export const AuditLogsView: React.FC = () => {
     <div className="space-y-6">
       
       {/* Top Header */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <Shield className="w-5 h-5 text-emerald-700" />
@@ -149,9 +149,9 @@ export const AuditLogsView: React.FC = () => {
       </div>
 
       {/* Audit Log Table */}
-      <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-2xs space-y-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4 min-w-0">
+        <div className="overflow-x-auto min-w-0">
+          <table className="w-full min-w-[700px] text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-stone-200 text-stone-400 font-bold uppercase text-[10px] tracking-wider">
                 <th className="pb-3 pl-2">User / Actor</th>
