@@ -31,6 +31,7 @@ export const ReviewAndPayView: React.FC<ReviewAndPayViewProps> = ({
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const handleConfirmPay = () => {
+    if (isProcessing) return; // Prevent repeated submissions
     setIsProcessing(true);
 
     setTimeout(() => {

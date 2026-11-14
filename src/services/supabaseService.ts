@@ -22,8 +22,18 @@ import { cache, CACHE_KEYS } from './storage';
 
 export class SupabaseService {
   private static realtimeChannel: any = null;
+  private static clientOverride: any = null;
+
+  public static setClientOverride(client: any): void {
+    this.clientOverride = client;
+  }
+
+  public static getClient(): any {
+    return this.clientOverride || supabase;
+  }
 
   public static isConnected(): boolean {
+    if (this.clientOverride) return true;
     return isSupabaseConfigured && supabase !== null;
   }
 
@@ -84,7 +94,7 @@ export class SupabaseService {
 
             // Sync with local cache
             const queue = cache.get<Token[]>(CACHE_KEYS.CACHED_QUEUE) || [];
-            const idx = queue.findIndex(t => t.id === mappedToken.id);
+            const idx = queue.findIndex(t => t.id === mappedToken.id || (t.tokenNumber && t.tokenNumber === mappedToken.tokenNumber));
             if (idx >= 0) {
               queue[idx] = { ...queue[idx], ...mappedToken };
             } else if (payload.eventType === 'INSERT') {
@@ -94,7 +104,7 @@ export class SupabaseService {
 
             // Update active token if it matches
             const activeToken = cache.get<Token>(CACHE_KEYS.ACTIVE_TOKEN);
-            if (activeToken && activeToken.id === mappedToken.id) {
+            if (activeToken && (activeToken.id === mappedToken.id || activeToken.tokenNumber === mappedToken.tokenNumber)) {
               cache.set(CACHE_KEYS.ACTIVE_TOKEN, { ...activeToken, ...mappedToken });
             }
 
@@ -199,138 +209,187 @@ export class SupabaseService {
   }
 
   // ==========================================================
-  // DATA FLOW 1: Patient Joins Queue
-  // Patient UI -> Supabase insert visit -> Supabase insert token -> localStorage cache -> Queue state updates
+  // DATA FLOW 1: Patient Joins Queue (Canonical Sync)
+  // Ensures ONE canonical token and visit flow with idempotent Supabase upsert.
   // ==========================================================
   public static async patientJoinQueueFlow(params: {
-    patient: Patient;
-    clinicId: string;
-    clinicName: string;
-    doctorId: string;
-    doctorName: string;
-    specialty: string;
-    reason: string;
-    symptomsSummary: string;
+    token?: Token;
+    visit?: Visit;
+    patient?: Patient;
+    clinicId?: string;
+    clinicName?: string;
+    doctorId?: string;
+    doctorName?: string;
+    specialty?: string;
+    reason?: string;
+    symptomsSummary?: string;
     severity?: number;
     durationDays?: number;
   }): Promise<{ token: Token; visit: Visit }> {
-    const visitId = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const tokenId = `tok_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
-    // Generate formatted token number
     const queue = cache.get<Token[]>(CACHE_KEYS.CACHED_QUEUE) || [];
-    const prefix = params.specialty.includes('Gastro') ? 'G' : params.specialty.includes('Neuro') ? 'N' : 'A';
-    const tokenNumber = `${prefix}-${100 + queue.length + 1}`;
 
-    const newVisit: Visit = {
-      id: visitId,
-      patientId: params.patient.id,
-      patient_id: params.patient.id,
-      clinicId: params.clinicId,
-      clinic_id: params.clinicId,
-      clinicName: params.clinicName,
-      doctorId: params.doctorId,
-      doctor_id: params.doctorId,
-      doctorName: params.doctorName,
-      specialty: params.specialty,
-      date: new Date().toISOString().split('T')[0],
-      reason: params.reason,
-      status: 'scheduled',
-      notes: params.symptomsSummary,
-      resolved: false,
-      created_at: new Date().toISOString(),
-    };
+    let canonicalToken: Token;
+    let canonicalVisit: Visit;
 
-    const isStagnant = params.patient.hasStagnation || params.patient.currentDps < 65;
+    if (params.token) {
+      // Use existing canonical token
+      canonicalToken = params.token;
 
-    const newToken: Token = {
-      id: tokenId,
-      visitId: visitId,
-      visit_id: visitId,
-      clinicId: params.clinicId,
-      clinic_id: params.clinicId,
-      doctorId: params.doctorId,
-      doctor_id: params.doctorId,
-      patientId: params.patient.id,
-      patient_id: params.patient.id,
-      tokenNumber,
-      token_number: tokenNumber,
-      patientName: params.patient.fullName,
-      patientAge: params.patient.age,
-      patientGender: params.patient.gender,
-      clinicName: params.clinicName,
-      doctorName: params.doctorName,
-      specialty: params.specialty,
-      status: 'waiting',
-      priority: isStagnant ? 'priority_stagnation' : 'standard',
-      queuePosition: queue.filter(t => t.status === 'waiting').length + 1,
-      estimatedWaitMin: (queue.filter(t => t.status === 'waiting').length + 1) * 12,
-      sanctuary_state: 'QUEUE_STABLE',
-      checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      dpsScore: params.patient.currentDps,
-      stagnationFlag: isStagnant,
-      stagnationReason: isStagnant ? 'Diagnostic Odyssey detected: Elevated queue priority assigned.' : undefined,
-      symptomsSummary: params.symptomsSummary,
-      created_at: new Date().toISOString(),
-    };
+      if (params.visit) {
+        canonicalVisit = params.visit;
+      } else {
+        const visitId = canonicalToken.visitId || canonicalToken.visit_id || `vis_${Date.now()}`;
+        canonicalVisit = {
+          id: visitId,
+          patientId: canonicalToken.patientId || canonicalToken.patient_id || params.patient?.id || '',
+          patient_id: canonicalToken.patientId || canonicalToken.patient_id || params.patient?.id || '',
+          clinicId: canonicalToken.clinicId || canonicalToken.clinic_id || params.clinicId || '',
+          clinic_id: canonicalToken.clinicId || canonicalToken.clinic_id || params.clinicId || '',
+          clinicName: canonicalToken.clinicName || params.clinicName || 'Clinic',
+          doctorId: canonicalToken.doctorId || canonicalToken.doctor_id || params.doctorId || '',
+          doctor_id: canonicalToken.doctorId || canonicalToken.doctor_id || params.doctorId || '',
+          doctorName: canonicalToken.doctorName || params.doctorName || 'Doctor',
+          specialty: canonicalToken.specialty || params.specialty || 'General Medicine',
+          date: new Date().toISOString().split('T')[0],
+          reason: params.reason || canonicalToken.symptomsSummary || 'Consultation',
+          status: 'waiting',
+          notes: canonicalToken.symptomsSummary || '',
+          resolved: false,
+          created_at: canonicalToken.created_at || new Date().toISOString(),
+        };
+      }
+    } else {
+      // Fallback for callers that did not pre-create canonical tokens
+      const visitId = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const tokenId = `tok_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const prefix = (params.specialty || '').includes('Gastro') ? 'G' : (params.specialty || '').includes('Neuro') ? 'N' : 'A';
+      const tokenNumber = `${prefix}-${100 + queue.length + 1}`;
+      const isStagnant = Boolean(params.patient?.hasStagnation || (params.patient?.currentDps && params.patient.currentDps < 65));
 
-    // 1. If Supabase is connected, insert into Supabase PostgreSQL tables
-    if (this.isConnected() && supabase) {
+      canonicalVisit = {
+        id: visitId,
+        patientId: params.patient?.id || '',
+        patient_id: params.patient?.id || '',
+        clinicId: params.clinicId || '',
+        clinic_id: params.clinicId || '',
+        clinicName: params.clinicName || 'Clinic',
+        doctorId: params.doctorId || '',
+        doctor_id: params.doctorId || '',
+        doctorName: params.doctorName || 'Doctor',
+        specialty: params.specialty || 'General Medicine',
+        date: new Date().toISOString().split('T')[0],
+        reason: params.reason || params.symptomsSummary || 'Walk-in Consultation',
+        status: 'waiting',
+        notes: params.symptomsSummary || '',
+        resolved: false,
+        created_at: new Date().toISOString(),
+      };
+
+      const waitingCount = queue.filter(t => t.status === 'waiting').length;
+      canonicalToken = {
+        id: tokenId,
+        visitId: visitId,
+        visit_id: visitId,
+        clinicId: params.clinicId || '',
+        clinic_id: params.clinicId || '',
+        doctorId: params.doctorId || '',
+        doctor_id: params.doctorId || '',
+        patientId: params.patient?.id || '',
+        patient_id: params.patient?.id || '',
+        tokenNumber,
+        token_number: tokenNumber,
+        patientName: params.patient?.fullName || 'Patient',
+        patientAge: params.patient?.age || 30,
+        patientGender: params.patient?.gender || 'Other',
+        clinicName: params.clinicName || 'Clinic',
+        doctorName: params.doctorName || 'Doctor',
+        specialty: params.specialty || 'General Medicine',
+        status: 'waiting',
+        priority: isStagnant ? 'priority_stagnation' : 'standard',
+        queuePosition: waitingCount + 1,
+        estimatedWaitMin: (waitingCount + 1) * 8,
+        sanctuary_state: 'QUEUE_STABLE',
+        checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        dpsScore: params.patient?.currentDps || 85,
+        stagnationFlag: isStagnant,
+        stagnationReason: isStagnant ? 'Diagnostic Odyssey detected: Elevated queue priority assigned.' : undefined,
+        symptomsSummary: params.symptomsSummary || '',
+        created_at: new Date().toISOString(),
+      };
+    }
+
+    // 1. Update localStorage cache abstraction idempotently (never append duplicate)
+    const existingTokenIdx = queue.findIndex(
+      t => t.id === canonicalToken.id || (t.tokenNumber && t.tokenNumber === canonicalToken.tokenNumber)
+    );
+    if (existingTokenIdx >= 0) {
+      queue[existingTokenIdx] = { ...queue[existingTokenIdx], ...canonicalToken };
+    } else {
+      queue.push(canonicalToken);
+    }
+    cache.set(CACHE_KEYS.CACHED_QUEUE, queue);
+    cache.set(CACHE_KEYS.ACTIVE_TOKEN, canonicalToken);
+
+    const visits = cache.get<Visit[]>(CACHE_KEYS.VISIT_RECORDS) || [];
+    const existingVisitIdx = visits.findIndex(v => v.id === canonicalVisit.id);
+    if (existingVisitIdx >= 0) {
+      visits[existingVisitIdx] = { ...visits[existingVisitIdx], ...canonicalVisit };
+      cache.set(CACHE_KEYS.VISIT_RECORDS, visits);
+    } else {
+      cache.set(CACHE_KEYS.VISIT_RECORDS, [canonicalVisit, ...visits]);
+    }
+
+    // 2. If Supabase is connected, persist idempotently using upsert
+    const client = this.getClient();
+    if (this.isConnected() && client) {
       try {
-        await supabase.from('visits').insert({
-          id: newVisit.id,
-          patient_id: newVisit.patientId,
-          clinic_id: newVisit.clinicId,
-          doctor_id: newVisit.doctorId,
-          date: newVisit.date,
-          reason: newVisit.reason,
-          status: newVisit.status,
-          notes: newVisit.notes,
-          resolved: newVisit.resolved,
-        });
+        await client.from('visits').upsert({
+          id: canonicalVisit.id,
+          patient_id: canonicalVisit.patientId || canonicalVisit.patient_id,
+          clinic_id: canonicalVisit.clinicId || canonicalVisit.clinic_id,
+          doctor_id: canonicalVisit.doctorId || canonicalVisit.doctor_id,
+          date: canonicalVisit.date,
+          reason: canonicalVisit.reason,
+          status: canonicalVisit.status,
+          notes: canonicalVisit.notes,
+          resolved: canonicalVisit.resolved,
+        }, { onConflict: 'id' });
 
-        await supabase.from('tokens').insert({
-          id: newToken.id,
-          visit_id: newToken.visit_id,
-          clinic_id: newToken.clinic_id,
-          doctor_id: newToken.doctor_id,
-          patient_id: newToken.patient_id,
-          token_number: newToken.tokenNumber,
-          status: newToken.status,
-          priority: newToken.priority,
-          queue_position: newToken.queuePosition,
-          estimated_wait_minutes: newToken.estimatedWaitMin,
-          sanctuary_state: 'QUEUE_STABLE',
-          dps_score: newToken.dpsScore,
-          stagnation_flag: newToken.stagnationFlag,
-          stagnation_reason: newToken.stagnationReason,
-          symptoms_summary: newToken.symptomsSummary,
-        });
+        await client.from('tokens').upsert({
+          id: canonicalToken.id,
+          visit_id: canonicalToken.visitId || canonicalToken.visit_id || canonicalVisit.id,
+          clinic_id: canonicalToken.clinicId || canonicalToken.clinic_id,
+          doctor_id: canonicalToken.doctorId || canonicalToken.doctor_id,
+          patient_id: canonicalToken.patientId || canonicalToken.patient_id,
+          token_number: canonicalToken.tokenNumber,
+          status: canonicalToken.status,
+          priority: canonicalToken.priority,
+          queue_position: canonicalToken.queuePosition,
+          estimated_wait_minutes: canonicalToken.estimatedWaitMin,
+          sanctuary_state: canonicalToken.sanctuary_state || 'QUEUE_STABLE',
+          dps_score: canonicalToken.dpsScore,
+          stagnation_flag: canonicalToken.stagnationFlag,
+          stagnation_reason: canonicalToken.stagnationReason,
+          symptoms_summary: canonicalToken.symptomsSummary,
+        }, { onConflict: 'id' });
 
         if (params.severity && params.durationDays) {
-          await supabase.from('symptoms').insert({
-            patient_id: params.patient.id,
-            visit_id: visitId,
-            symptom_name: params.reason,
+          await client.from('symptoms').upsert({
+            id: `sym_${canonicalVisit.id}`,
+            patient_id: canonicalToken.patientId || canonicalToken.patient_id,
+            visit_id: canonicalVisit.id,
+            symptom_name: canonicalVisit.reason || canonicalToken.symptomsSummary,
             severity: params.severity,
             duration_days: params.durationDays,
-            description: params.symptomsSummary,
-          });
+            description: canonicalToken.symptomsSummary,
+          }, { onConflict: 'id' });
         }
       } catch (err) {
-        console.warn('[Supabase Insert Error (graceful fallback)]', err);
+        console.warn('[Supabase Insert/Upsert Error (graceful fallback)]', err);
       }
     }
 
-    // 2. Update localStorage cache abstraction
-    const updatedQueue = [...queue, newToken];
-    cache.set(CACHE_KEYS.CACHED_QUEUE, updatedQueue);
-    cache.set(CACHE_KEYS.ACTIVE_TOKEN, newToken);
-
-    const visits = cache.get<Visit[]>(CACHE_KEYS.VISIT_RECORDS) || [];
-    cache.set(CACHE_KEYS.VISIT_RECORDS, [newVisit, ...visits]);
-
-    return { token: newToken, visit: newVisit };
+    return { token: canonicalToken, visit: canonicalVisit };
   }
 
   // ==========================================================

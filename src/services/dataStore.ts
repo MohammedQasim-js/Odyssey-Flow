@@ -961,6 +961,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_aarav_27',
+    visitId: 'vis_aarav_6',
+    visit_id: 'vis_aarav_6',
     tokenNumber: 'A-27',
     patientId: 'pat_aarav_0',
     patientName: 'Aarav Mehta',
@@ -1035,6 +1037,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_1',
+    visitId: 'vis_sunita_2',
+    visit_id: 'vis_sunita_2',
     tokenNumber: 'A-101',
     patientId: 'pat_sunita_3',
     patientName: 'Sunita Deshmukh',
@@ -1057,6 +1061,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_2',
+    visitId: 'vis_priya_4',
+    visit_id: 'vis_priya_4',
     tokenNumber: 'A-102',
     patientId: 'pat_priya_1',
     patientName: 'Priya Sharma',
@@ -1079,6 +1085,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_3',
+    visitId: 'vis_devendra_1',
+    visit_id: 'vis_devendra_1',
     tokenNumber: 'A-103',
     patientId: 'pat_devendra_4',
     patientName: 'Devendra Patel',
@@ -1100,6 +1108,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_4',
+    visitId: 'vis_rahul_1',
+    visit_id: 'vis_rahul_1',
     tokenNumber: 'A-104',
     patientId: 'pat_rahul_2',
     patientName: 'Rahul Verma',
@@ -1121,6 +1131,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_vikram_5',
+    visitId: 'vis_vikram_4',
+    visit_id: 'vis_vikram_4',
     tokenNumber: 'A-105',
     patientId: 'pat_vikram_5',
     patientName: 'Vikram Rao',
@@ -1143,6 +1155,8 @@ export const INITIAL_TOKENS: Token[] = [
   },
   {
     id: 'tok_kavita_6',
+    visitId: 'vis_kavita_3',
+    visit_id: 'vis_kavita_3',
     tokenNumber: 'A-106',
     patientId: 'pat_kavita_6',
     patientName: 'Kavita Nair',
@@ -1920,7 +1934,8 @@ export class DataStore {
       cache.set(CACHE_KEYS.CURRENT_PATIENT_SESSION, INITIAL_PATIENTS[0]);
     }
     if (!cache.get(CACHE_KEYS.ACTIVE_TOKEN)) {
-      cache.set(CACHE_KEYS.ACTIVE_TOKEN, INITIAL_TOKENS[0]); // A-27 for Aarav
+      const aaravToken = INITIAL_TOKENS.find(t => t.id === 'tok_aarav_27' || t.tokenNumber === 'A-27');
+      cache.set(CACHE_KEYS.ACTIVE_TOKEN, aaravToken || INITIAL_TOKENS[0]); // A-27 for Aarav
     }
     if (!cache.get(CACHE_KEYS.SIMULATION_STATE)) {
       cache.set(CACHE_KEYS.SIMULATION_STATE, {
@@ -2063,15 +2078,24 @@ export class DataStore {
     }
     const cachedToken = cache.get<Token>(CACHE_KEYS.ACTIVE_TOKEN);
     if (cachedToken) {
-      const live = queue.find(t => t.id === cachedToken.id);
+      const live = queue.find(t => t.id === cachedToken.id || (t.tokenNumber && t.tokenNumber === cachedToken.tokenNumber));
       return live || cachedToken;
     }
-    return queue[1]; // default to A-102
+    const aaravToken = queue.find(t => t.patientId === 'pat_aarav_0' || t.tokenNumber === 'A-27');
+    return aaravToken || queue.find(t => t.status === 'waiting') || queue[0];
   }
 
   static setActiveToken(token: Token): void {
     this.init();
-    cache.set(CACHE_KEYS.ACTIVE_TOKEN, token);
+    let queue = [...this.getQueue()];
+    const idx = queue.findIndex(t => t.id === token.id || (t.tokenNumber && t.tokenNumber === token.tokenNumber));
+    if (idx >= 0) {
+      queue[idx] = { ...queue[idx], ...token };
+      cache.set(CACHE_KEYS.CACHED_QUEUE, queue);
+      cache.set(CACHE_KEYS.ACTIVE_TOKEN, queue[idx]);
+    } else {
+      cache.set(CACHE_KEYS.ACTIVE_TOKEN, token);
+    }
   }
 
   /**
@@ -2792,6 +2816,8 @@ export class DataStore {
 
   /**
    * Token Generation / Check-in
+   * Establishes ONE canonical token and visit flow.
+   * Generates IDs and token numbers once and prevents duplicate visits on repeated submissions.
    */
   static generateToken(params: {
     patientId: string;
@@ -2801,6 +2827,7 @@ export class DataStore {
     severity?: number;
     durationDays?: number;
   }): Token {
+    this.init();
     const queue = this.getQueue();
     const patient = this.getPatient(params.patientId);
     const clinic = this.getClinic(params.clinicId) || INITIAL_CLINICS[0];
@@ -2816,34 +2843,131 @@ export class DataStore {
       }
     }
 
-    const nextNumber = `A-${101 + queue.length}`;
-    const waitingCount = queue.filter(t => t.status === 'waiting').length;
-    const estWait = (waitingCount + 1) * 8;
+    // 1. Idempotency / Duplicate Prevention:
+    // Check if patient already has an active (waiting, called, or in_consultation) token in the queue
+    const existingActiveToken = queue.find(
+      t => t.patientId === params.patientId && 
+           (t.status === 'waiting' || t.status === 'called' || t.status === 'in_consultation')
+    );
 
-    const isStagnant = (patient?.currentDps || 85) < 50 || (params.durationDays && params.durationDays > 60);
+    if (existingActiveToken) {
+      // Patient already has an active token in the queue — update details without duplicating
+      if (params.symptomsSummary) {
+        existingActiveToken.symptomsSummary = params.symptomsSummary;
+      }
+      this.setActiveToken(existingActiveToken);
+      this.logAudit('TOKEN_REUSED', 'token', existingActiveToken.id, `Patient ${existingActiveToken.patientName} reused active token ${existingActiveToken.tokenNumber}`);
 
-    const newToken: Token = {
-      id: `tok_${Date.now()}`,
-      tokenNumber: nextNumber,
+      // Ensure remote synchronization is idempotent
+      if (patient) {
+        const visits = this.getVisits(patient.id);
+        const existingVisit = visits.find(v => v.id === existingActiveToken.visitId || v.id === existingActiveToken.visit_id) || visits[0];
+        if (!existingActiveToken.visitId && existingVisit) {
+          existingActiveToken.visitId = existingVisit.id;
+          existingActiveToken.visit_id = existingVisit.id;
+        }
+
+        SupabaseService.patientJoinQueueFlow({
+          token: existingActiveToken,
+          visit: existingVisit,
+          patient,
+          severity: params.severity || 6,
+          durationDays: params.durationDays || 14,
+        }).catch(err => {
+          console.warn('[Supabase] patientJoinQueueFlow sync error:', err);
+        });
+      }
+
+      return existingActiveToken;
+    }
+
+    // 2. Canonical Identifiers:
+    // Generate unique visit ID and token ID ONCE
+    const isAarav = params.patientId === 'pat_aarav_0' || (patient?.fullName || '').includes('Aarav');
+    const timestamp = Date.now();
+    const entropy = Math.random().toString(36).substring(2, 7);
+    const visitId = `vis_${timestamp}_${entropy}`;
+    const tokenId = isAarav ? 'tok_aarav_27' : `tok_${timestamp}_${entropy}`;
+
+    // Generate formatted token number ONCE
+    let canonicalTokenNumber: string;
+    if (isAarav) {
+      canonicalTokenNumber = 'A-27';
+    } else {
+      const prefix = (assignedDoctor.specialty || '').includes('Gastro') ? 'G' : (assignedDoctor.specialty || '').includes('Neuro') ? 'N' : 'A';
+      const existingNums = queue
+        .filter(t => t.tokenNumber.startsWith(`${prefix}-`))
+        .map(t => parseInt(t.tokenNumber.replace(`${prefix}-`, ''), 10))
+        .filter(n => !isNaN(n));
+      const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 100 + queue.length;
+      canonicalTokenNumber = `${prefix}-${Math.max(maxNum + 1, 100 + queue.length + 1)}`;
+    }
+
+    const waitingCount = queue.filter(t => t.status === 'waiting' && t.clinicId === clinic.id).length;
+    const queuePosition = isAarav ? 7 : waitingCount + 1;
+    const estWait = isAarav ? 24 : Math.max(8, queuePosition * 8);
+    const isStagnant = (patient?.currentDps || 85) < 50 || Boolean(patient?.hasStagnation) || Boolean(params.durationDays && params.durationDays > 60);
+
+    // 3. Create canonical Visit object
+    const newVisit: Visit = {
+      id: visitId,
       patientId: params.patientId,
+      patient_id: params.patientId,
+      clinicId: clinic.id,
+      clinic_id: clinic.id,
+      clinicName: clinic.name,
+      doctorId: assignedDoctor.id,
+      doctor_id: assignedDoctor.id,
+      doctorName: assignedDoctor.name,
+      specialty: assignedDoctor.specialty,
+      date: new Date().toISOString().split('T')[0],
+      reason: params.symptomsSummary || 'Walk-in Consultation',
+      chiefComplaint: params.symptomsSummary || 'Walk-in Consultation',
+      status: 'waiting',
+      notes: params.symptomsSummary || '',
+      resolved: false,
+      created_at: new Date().toISOString(),
+    };
+
+    // 4. Create canonical Token object
+    const newToken: Token = {
+      id: tokenId,
+      visitId: visitId,
+      visit_id: visitId,
+      clinicId: clinic.id,
+      clinic_id: clinic.id,
+      doctorId: assignedDoctor.id,
+      doctor_id: assignedDoctor.id,
+      patientId: params.patientId,
+      patient_id: params.patientId,
+      tokenNumber: canonicalTokenNumber,
+      token_number: canonicalTokenNumber,
       patientName: patient?.fullName || 'Walk-in Patient',
       patientAge: patient?.age || 30,
       patientGender: patient?.gender || 'Other',
-      clinicId: clinic.id,
       clinicName: clinic.name,
-      doctorId: assignedDoctor.id,
       doctorName: assignedDoctor.name,
       specialty: assignedDoctor.specialty,
+      roomNumber: assignedDoctor.room || 'Room 101',
       status: 'waiting',
       priority: isStagnant ? 'priority_stagnation' : 'standard',
-      queuePosition: waitingCount + 1,
+      queuePosition: queuePosition,
+      queue_position: queuePosition,
       estimatedWaitMin: estWait,
+      estimated_wait_minutes: estWait,
+      sanctuary_state: 'QUEUE_STABLE',
       checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       dpsScore: patient?.currentDps || 85,
       stagnationFlag: Boolean(isStagnant),
-      stagnationReason: isStagnant ? 'Duration > 60 days with uncharacterized symptoms' : undefined,
+      stagnationReason: isStagnant ? 'Diagnostic Odyssey detected: Elevated queue priority assigned.' : undefined,
       symptomsSummary: params.symptomsSummary,
+      expectedDuration: 10,
+      created_at: new Date().toISOString(),
     };
+
+    // 5. Update local cache (Local-First)
+    const visits = this.getVisits();
+    cache.set(CACHE_KEYS.VISIT_RECORDS, [newVisit, ...visits]);
 
     queue.push(newToken);
     cache.set(CACHE_KEYS.CACHED_QUEUE, queue);
@@ -2851,17 +2975,12 @@ export class DataStore {
 
     this.logAudit('TOKEN_GENERATED', 'token', newToken.id, `Generated token ${newToken.tokenNumber} for ${newToken.patientName}`);
 
-    // Asynchronous Supabase synchronization
+    // 6. Asynchronous remote synchronization with Supabase
     if (patient) {
       SupabaseService.patientJoinQueueFlow({
+        token: newToken,
+        visit: newVisit,
         patient,
-        clinicId: clinic.id,
-        clinicName: clinic.name,
-        doctorId: assignedDoctor.id,
-        doctorName: assignedDoctor.name,
-        specialty: assignedDoctor.specialty,
-        reason: params.symptomsSummary || 'Walk-in Consultation',
-        symptomsSummary: params.symptomsSummary || '',
         severity: params.severity || 6,
         durationDays: params.durationDays || 14,
       }).catch(err => {
@@ -3424,7 +3543,8 @@ export class DataStore {
     cache.set(CACHE_KEYS.DIAGNOSTIC_EVENTS, INITIAL_DIAGNOSTIC_EVENTS);
     cache.set(CACHE_KEYS.BILLING_RECORDS, INITIAL_BILLING);
     cache.set(CACHE_KEYS.CURRENT_PATIENT_SESSION, INITIAL_PATIENTS[0]);
-    cache.set(CACHE_KEYS.ACTIVE_TOKEN, INITIAL_TOKENS[1]);
+    const aaravToken = INITIAL_TOKENS.find(t => t.id === 'tok_aarav_27' || t.tokenNumber === 'A-27');
+    cache.set(CACHE_KEYS.ACTIVE_TOKEN, aaravToken || INITIAL_TOKENS[0]);
     this.logAudit('DEMO_RESET', 'queue', 'all', 'Reset demo state to baseline seed data.');
   }
 }

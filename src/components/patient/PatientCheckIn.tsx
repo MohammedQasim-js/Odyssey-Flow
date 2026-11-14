@@ -46,10 +46,11 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
 
   const handleConfirmCheckIn = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent repeated submissions
     setIsSubmitting(true);
 
     setTimeout(() => {
-      // Generate token in DataStore
+      // Generate canonical token in DataStore (handles idempotency and canonical IDs)
       const token = DataStore.generateToken({
         patientId: currentPatient.id,
         clinicId: selectedClinicId,
@@ -57,18 +58,6 @@ export const PatientCheckIn: React.FC<PatientCheckInProps> = ({
         severity: 7,
         durationDays: 21,
       });
-
-      // Override for the exact required demo values if it is Aarav Mehta
-      if (currentPatient.id === 'pat_aarav_0' || (currentPatient.fullName || (currentPatient as any).name || '').includes('Aarav')) {
-        token.tokenNumber = 'A-27';
-        token.doctorName = 'Dr. A. Sharma';
-        token.clinicName = 'Odyssey Care Clinic';
-        token.roomNumber = 'Room 101';
-        token.queuePosition = 7;
-        token.estimatedWaitMin = 24;
-        token.sanctuary_state = 'QUEUE_STABLE';
-        DataStore.setActiveToken(token);
-      }
 
       setGeneratedToken(token);
       setIsSubmitting(false);
