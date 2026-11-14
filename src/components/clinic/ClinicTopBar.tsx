@@ -54,7 +54,7 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-stone-200/80 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+    <header className="bg-white border-b border-stone-200/80 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]">
       
       {/* Left: Mobile Menu Toggle + Clinic Brand & Date */}
       <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
@@ -69,13 +69,13 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
           </button>
         )}
 
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-stone-900 text-emerald-400 flex items-center justify-center font-black text-sm sm:text-lg shadow-xs shrink-0">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-stone-900 text-emerald-400 flex items-center justify-center font-bold text-sm sm:text-base shadow-xs shrink-0 tracking-tight">
           O
         </div>
 
         <div className="min-w-0">
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
-            <h1 className="text-xs sm:text-sm font-extrabold text-stone-900 tracking-tight truncate max-w-[150px] sm:max-w-xs md:max-w-none">
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xs sm:text-sm font-bold text-stone-900 tracking-tight truncate max-w-[150px] sm:max-w-xs md:max-w-none">
               <span>{settings.clinicName}</span>
             </h1>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
@@ -101,32 +101,32 @@ export const ClinicTopBar: React.FC<ClinicTopBarProps> = ({
             value={search}
             onChange={handleSearchChange}
             placeholder="Search patients, tokens (e.g. A-27), UHID, or doctors..."
-            className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            className="w-full pl-9 pr-4 py-2 min-h-[38px] bg-stone-50/80 border border-stone-200 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all shadow-2xs"
           />
         </div>
       </div>
 
       {/* Right Controls: Notifications, Profile, Quick Action */}
-      <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+      <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
         
         {/* Quick Action: "+ New" */}
         <button
           onClick={onOpenNewModal}
-          className="px-2.5 sm:px-3.5 py-2 min-h-[36px] sm:min-h-[40px] rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-bold shadow-xs flex items-center space-x-1 sm:space-x-1.5 transition-all"
+          className="btn-primary"
         >
-          <Plus className="w-4 h-4" />
-          <span>+ New</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>New Patient</span>
         </button>
 
         {/* Notifications Dropdown Toggle */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition-all relative"
+            className="w-9 h-9 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 flex items-center justify-center text-stone-600 transition-all relative shadow-2xs"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-extrabold flex items-center justify-center border-2 border-white">
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
               3
             </span>
           </button>

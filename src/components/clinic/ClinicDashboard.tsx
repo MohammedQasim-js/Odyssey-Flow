@@ -562,7 +562,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       }`}
                     >
                       {/* Patient */}
-                      <td className="py-5 pl-2 font-semibold text-stone-900">
+                      <td className="py-3.5 sm:py-4 pl-2 font-semibold text-stone-900">
                         <div
                           onClick={() => onOpenSnapshot(t)}
                           className="cursor-pointer hover:text-emerald-700"
@@ -578,14 +578,14 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
 
                       {/* Reason */}
                       <td
-                        className="py-5 text-stone-600 max-w-[130px] truncate"
+                        className="py-3.5 sm:py-4 text-stone-600 max-w-[130px] truncate"
                         title={t.symptomsSummary}
                       >
                         {t.symptomsSummary || "Diagnostic Evaluation"}
                       </td>
 
                       {/* Doctor */}
-                      <td className="py-5 text-stone-800 font-medium">
+                      <td className="py-3.5 sm:py-4 text-stone-800 font-medium">
                         <span className="block truncate">{t.doctorName}</span>
                         <span className="text-[10px] text-stone-400 font-mono">
                           {t.roomNumber || "Room 101"}
@@ -594,7 +594,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
 
                       {/* Token */}
                       <td
-                        className="py-5 font-mono font-black text-stone-900 whitespace-nowrap"
+                        className="py-3.5 sm:py-4 font-mono font-bold text-stone-900 whitespace-nowrap"
                         style={{ minWidth: 76 }}
                       >
                         <span
@@ -610,20 +610,20 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Status */}
-                      <td className="py-5 whitespace-nowrap">
+                      <td className="py-3.5 sm:py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold ${
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                             isInConsult
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold"
                               : isCalled
-                                ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                ? "bg-amber-50 text-amber-800 border border-amber-300 animate-pulse font-bold"
                                 : isWaiting
-                                  ? "bg-stone-100 text-stone-700 border border-stone-200"
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
                                   : isCompleted
-                                    ? "bg-stone-100 text-stone-400 line-through"
+                                    ? "bg-stone-100 text-stone-600 border border-stone-200"
                                     : isSkipped
-                                      ? "bg-amber-100 text-amber-800 border border-amber-300"
-                                      : "bg-stone-100 text-stone-600"
+                                      ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                      : "bg-stone-100 text-stone-600 border border-stone-200"
                           }`}
                         >
                           {isInConsult
@@ -641,7 +641,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Sanctuary Pulse */}
-                      <td className="py-5 text-[11px]">
+                      <td className="py-3.5 sm:py-4 text-[11px]">
                         <span
                           className="truncate block max-w-[130px] font-medium text-stone-700"
                           title={`${pulse.statusBadge}: ${pulse.title}`}
@@ -654,13 +654,13 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Priority / DPS */}
-                      <td className="py-5">
+                      <td className="py-3.5 sm:py-4">
                         {t.stagnationFlag ? (
                           <div
                             onClick={() => onOpenSnapshot(t)}
                             className="cursor-pointer"
                           >
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-1 w-fit">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300 flex items-center space-x-1 w-fit">
                               <AlertTriangle className="w-2.5 h-2.5" />
                               <span>Review Recommended</span>
                             </span>
@@ -681,7 +681,7 @@ export const ClinicDashboard: React.FC<ClinicDashboardProps> = ({
                       </td>
 
                       {/* Action Buttons */}
-                      <td className="py-5 pr-2 text-right whitespace-nowrap">
+                      <td className="py-3.5 sm:py-4 pr-2 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-1">
                           {/* Pre-Consultation Snapshot */}
                           <button

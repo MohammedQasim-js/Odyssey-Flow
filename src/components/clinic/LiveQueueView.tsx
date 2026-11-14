@@ -224,32 +224,32 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
       case "in_consultation":
       case "in_treatment":
         return (
-          <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
             <span>In Treatment</span>
           </span>
         );
       case "called":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 animate-pulse">
             Called
           </span>
         );
       case "completed":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-600 border border-stone-200">
             Completed
           </span>
         );
       case "skipped":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
             Skipped
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-700 border border-stone-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
             Waiting
           </span>
         );
@@ -616,7 +616,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       }`}
                     >
                       {/* 1. Patient */}
-                      <td className="py-5 px-4 pl-6">
+                      <td className="py-3.5 sm:py-4 px-4 pl-6">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center font-bold text-stone-700 text-xs shrink-0">
                             {token.patientName
@@ -638,7 +638,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
 
                       {/* 2. Token */}
                       <td
-                        className="py-5 px-3 whitespace-nowrap"
+                        className="py-3.5 sm:py-4 px-3 whitespace-nowrap"
                         style={{ minWidth: 76 }}
                       >
                         <span
@@ -654,14 +654,14 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 3. Reason */}
-                      <td className="py-5 px-3 hidden md:table-cell">
+                      <td className="py-3.5 sm:py-4 px-3 hidden md:table-cell">
                         <span className="text-xs text-stone-600 block max-w-[180px] truncate">
                           {token.symptomsSummary || "General consultation"}
                         </span>
                       </td>
 
                       {/* 4. Doctor */}
-                      <td className="py-5 px-3 whitespace-nowrap">
+                      <td className="py-3.5 sm:py-4 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
                           <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold shrink-0">
                             {token.doctorName.replace("Dr. ", "")[0]}
@@ -678,7 +678,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 5. Queue Pos */}
-                      <td className="py-5 px-3 hidden lg:table-cell font-mono">
+                      <td className="py-3.5 sm:py-4 px-3 hidden lg:table-cell font-mono">
                         {token.status === "in_consultation" ? (
                           <span className="text-emerald-700 font-bold">
                             In Suite
@@ -693,12 +693,12 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 6. Status */}
-                      <td className="py-5 px-3">
+                      <td className="py-3.5 sm:py-4 px-3">
                         {getStatusPill(token.status)}
                       </td>
 
                       {/* 7. Sanctuary Pulse */}
-                      <td className="py-5 px-3">
+                      <td className="py-3.5 sm:py-4 px-3">
                         <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-800 border border-stone-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           <span className="truncate max-w-[140px]">
@@ -708,7 +708,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 8. Clinical Signal */}
-                      <td className="py-5 px-3">
+                      <td className="py-3.5 sm:py-4 px-3">
                         {signal.key !== "no_signal" ? (
                           <button
                             type="button"
@@ -743,7 +743,7 @@ export const LiveQueueView: React.FC<LiveQueueViewProps> = ({
                       </td>
 
                       {/* 9. Action */}
-                      <td className="py-5 px-4 pr-6 text-right">
+                      <td className="py-3.5 sm:py-4 px-4 pr-6 text-right">
                         <button
                           type="button"
                           onClick={(e) => {
