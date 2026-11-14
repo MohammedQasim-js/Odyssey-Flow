@@ -229,6 +229,8 @@ export interface Token {
   symptomsSummary: string;
   department?: string;
   consent_status?: "granted" | "declined" | "pending" | "revoked" | string;
+  patientArrived?: boolean;
+  arrivedAt?: string;
   expectedDuration?: number;
   routing?: string;
   created_at?: string;

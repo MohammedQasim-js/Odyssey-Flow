@@ -252,7 +252,10 @@ export const SanctuaryPulseView: React.FC<SanctuaryPulseViewProps> = ({
       return (
         <div className="space-y-2">
           <button
-            onClick={() => handleCtaClick(`Reported arrival to ${effectiveToken.roomNumber || 'Room 101'}`)}
+            onClick={() => {
+              DataStore.markArrived(effectiveToken.id);
+              handleCtaClick(`Reported arrival to ${effectiveToken.roomNumber || 'Room 101'}`);
+            }}
             className="w-full py-3.5 px-4 bg-[#16A34A] hover:bg-[#15803D] active:scale-[0.99] text-white rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center space-x-2 transition-all"
           >
             <CheckCircle2 className="w-4 h-4" />

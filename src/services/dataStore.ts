@@ -3100,7 +3100,19 @@ export class DataStore {
     const index = queue.findIndex(t => t.id === tokenId || t.tokenNumber === tokenId);
     if (index === -1) return undefined;
 
-    const target = queue[index];
+    const target: Token = {
+      ...queue[index],
+      patientArrived: true,
+      arrivedAt: new Date().toISOString(),
+    };
+    queue[index] = target;
+    cache.set(CACHE_KEYS.CACHED_QUEUE, queue);
+
+    const activeToken = this.getActiveToken();
+    if (activeToken && (activeToken.id === target.id || activeToken.tokenNumber === target.tokenNumber)) {
+      this.setActiveToken(target);
+    }
+
     this.logAudit(
       'PATIENT_ARRIVED',
       'token',
