@@ -186,4 +186,6 @@ export const CACHE_KEYS = {
   REFERRAL_RECORDS: 'clinical:referrals:all',
   CLINIC_SETTINGS: 'clinic:settings:config',
   QUEUE_PAUSED: 'clinic:queue:paused',
+  INSURANCE_CLAIMS: 'clinic:insurance:claims',
+  DOCTOR_SHIFTS: 'clinic:doctor:shifts',
 } as const;

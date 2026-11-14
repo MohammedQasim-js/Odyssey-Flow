@@ -145,7 +145,7 @@ export const ClinicShell: React.FC<ClinicShellProps> = ({
         );
 
       case 'scheduling':
-        return <SchedulingView doctors={doctors} />;
+        return <SchedulingView doctors={doctors} onNavigateToQueue={() => setActiveTab('live_queue')} />;
 
       case 'staff_shifts':
         return <StaffShiftsView />;

@@ -1,18 +1,36 @@
 import React, { useState } from 'react';
-import { Settings, CheckCircle2, Building2, Clock, ShieldCheck, Bell, HeartPulse, Save } from 'lucide-react';
-import { DataStore } from '../../services/dataStore';
+import { Settings, CheckCircle2, Building2, Clock, ShieldCheck, Bell, HeartPulse, Save, RotateCcw, AlertTriangle, X } from 'lucide-react';
+import { DataStore, DEFAULT_CLINIC_SETTINGS } from '../../services/dataStore';
 import { ClinicSettings } from '../../types';
 
 export const ClinicSettingsView: React.FC = () => {
   const [settings, setSettings] = useState<ClinicSettings>(() => DataStore.getClinicSettings());
   const [saved, setSaved] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetToast, setResetToast] = useState(false);
   const [deptInput, setDeptInput] = useState('');
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     DataStore.updateClinicSettings(settings);
+    DataStore.logAudit(
+      'SETTINGS_UPDATED',
+      'settings',
+      'clinic_settings',
+      `Updated intake window (${settings.defaultConsultationMin}m), senior review DPS threshold (${settings.seniorReviewThresholdDPS}), policy: ${settings.queuePolicy}`,
+      'Clinic Administrator',
+      '192.168.1.1 (Admin Console)'
+    );
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleConfirmReset = () => {
+    DataStore.resetDemoState();
+    setSettings(DataStore.getClinicSettings());
+    setResetModalOpen(false);
+    setResetToast(true);
+    setTimeout(() => setResetToast(false), 3500);
   };
 
   const handleAddDept = () => {
@@ -265,6 +283,85 @@ export const ClinicSettingsView: React.FC = () => {
         </div>
 
       </form>
+
+      {/* Danger Zone / Factory Demo Reset */}
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-rose-200/80 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-rose-100">
+          <div className="flex items-center space-x-2">
+            <RotateCcw className="w-4 h-4 text-rose-600" />
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-rose-900">
+              Prototype State Reset
+            </h3>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
+            Hackathon Demonstration
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div>
+            <span className="font-bold text-stone-900 block">Restore Factory Seed State</span>
+            <span className="text-[11px] text-stone-500">
+              Clears temporary cache and restores standard synthetic patient queue, doctors, appointments, and diagnostic records.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setResetModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold transition-all flex items-center space-x-1.5 shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+            <span>Reset Demo State</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Reset Confirmation Modal */}
+      {resetModalOpen && (
+        <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 border border-stone-200 shadow-xl space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <div className="flex items-center space-x-2 text-rose-600">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="text-sm font-extrabold text-stone-900">Confirm Factory Reset</h3>
+              </div>
+              <button onClick={() => setResetModalOpen(false)} className="text-stone-400 hover:text-stone-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              This will restore all queue tokens, patient visits, consultations, and billing records back to the factory seed state (Token A-27 for Aarav Mehta).
+            </p>
+
+            <div className="pt-2 flex items-center justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setResetModalOpen(false)}
+                className="px-3.5 py-1.5 rounded-xl border border-stone-200 text-stone-700 font-bold text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReset}
+                className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs"
+              >
+                Yes, Reset Everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Toast */}
+      {resetToast && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-stone-900 text-white text-xs font-bold flex items-center space-x-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>Demo state reset to factory baseline!</span>
+        </div>
+      )}
 
     </div>
   );

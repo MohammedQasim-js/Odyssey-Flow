@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Shield, Search, Filter, Clock, User, Laptop, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Shield, Search, Filter, Clock, User, Laptop, CheckCircle2, AlertTriangle, RefreshCw, Download, X } from 'lucide-react';
 import { DataStore } from '../../services/dataStore';
 import { AuditLog } from '../../types';
 
 export const AuditLogsView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>(() => {
     const existing = DataStore.getAuditLogs();
     if (existing.length > 0) return existing;
@@ -70,8 +71,40 @@ export const AuditLogsView: React.FC = () => {
     ];
   });
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
   const handleRefresh = () => {
     setLogs(DataStore.getAuditLogs());
+    showToast('Audit stream refreshed with latest telemetry.');
+  };
+
+  const handleExportAuditTrail = () => {
+    const headers = ['ID', 'Timestamp', 'Actor', 'Action', 'Entity_Type', 'Entity_ID', 'Patient_Name', 'Details', 'Device_IP'];
+    const rows = logs.map(l => [
+      `"${l.id}"`,
+      `"${l.timestamp}"`,
+      `"${l.performedBy}"`,
+      `"${l.action}"`,
+      `"${l.entityType}"`,
+      `"${l.entityId}"`,
+      `"${l.patientName || ''}"`,
+      `"${(l.details || '').replace(/"/g, '""')}"`,
+      `"${l.deviceIp || ''}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `odyssey_compliance_audit_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Exported ${logs.length} audit records to compliance CSV.`);
   };
 
   const filteredLogs = logs.filter(log => {
@@ -91,6 +124,19 @@ export const AuditLogsView: React.FC = () => {
   return (
     <div className="space-y-6">
       
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="p-3.5 rounded-2xl bg-emerald-900 text-white text-xs font-bold flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="text-emerald-300 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -99,19 +145,31 @@ export const AuditLogsView: React.FC = () => {
             <h2 className="text-xl font-extrabold text-stone-900 tracking-tight">
               System Audit Logs &amp; Compliance Trail
             </h2>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700">
+              {logs.length} Total Events
+            </span>
           </div>
           <p className="text-xs text-stone-500 mt-1">
-            Immutable trace of all queue transitions, clinician clinical workspace access, and algorithm actions.
+            Immutable trace of all queue transitions, clinician workspace access, billing actions, and algorithm events.
           </p>
         </div>
 
-        <button
-          onClick={handleRefresh}
-          className="px-3.5 py-2 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold flex items-center space-x-1.5 transition-all"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Stream</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportAuditTrail}
+            className="px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold flex items-center space-x-1.5 shadow-xs transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export Audit Trail</span>
+          </button>
+          <button
+            onClick={handleRefresh}
+            className="px-3.5 py-2 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold flex items-center space-x-1.5 transition-all"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh Stream</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -142,6 +200,7 @@ export const AuditLogsView: React.FC = () => {
             <option value="patient">Patient Records</option>
             <option value="dps">DPS Stagnation</option>
             <option value="doctor">Clinician Actions</option>
+            <option value="billing">Billing &amp; Claims</option>
             <option value="settings">Settings Changes</option>
           </select>
         </div>
@@ -150,61 +209,80 @@ export const AuditLogsView: React.FC = () => {
 
       {/* Audit Log Table */}
       <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-2xs space-y-4 min-w-0">
-        <div className="overflow-x-auto min-w-0">
-          <table className="w-full min-w-[700px] text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-stone-200 text-stone-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="pb-3 pl-2">User / Actor</th>
-                <th className="pb-3">Action</th>
-                <th className="pb-3">Patient / Entity</th>
-                <th className="pb-3">Details / Signal</th>
-                <th className="pb-3">Device / IP</th>
-                <th className="pb-3 pr-2 text-right">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 font-mono">
-              {filteredLogs.map(log => (
-                <tr key={log.id} className="hover:bg-stone-50/80 transition-all font-sans">
-                  
-                  {/* User */}
-                  <td className="py-3 pl-2 font-bold text-stone-900 flex items-center space-x-2">
-                    <User className="w-3.5 h-3.5 text-stone-400" />
-                    <span>{log.performedBy}</span>
-                  </td>
-
-                  {/* Action */}
-                  <td className="py-3 font-semibold text-emerald-800">
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-[11px]">
-                      {log.action}
-                    </span>
-                  </td>
-
-                  {/* Patient / Entity */}
-                  <td className="py-3 text-stone-800 font-medium">
-                    {log.patientName || log.entityId}
-                  </td>
-
-                  {/* Details */}
-                  <td className="py-3 text-stone-600 text-xs font-normal max-w-xs truncate" title={log.details}>
-                    {log.details}
-                  </td>
-
-                  {/* Device / IP */}
-                  <td className="py-3 text-stone-400 text-[11px] font-mono flex items-center space-x-1">
-                    <Laptop className="w-3 h-3 text-stone-400 shrink-0" />
-                    <span>{log.deviceIp || '192.168.1.42 (Station 01)'}</span>
-                  </td>
-
-                  {/* Timestamp */}
-                  <td className="py-3 pr-2 text-right text-stone-500 font-mono text-xs">
-                    {log.timestamp}
-                  </td>
-
+        {filteredLogs.length === 0 ? (
+          <div className="p-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200 space-y-2">
+            <Shield className="w-8 h-8 text-stone-400 mx-auto" />
+            <p className="text-xs font-bold text-stone-700">No audit records match the current filters</p>
+            <p className="text-[11px] text-stone-500">Try clearing the search or changing the event type filter.</p>
+            <button
+              onClick={() => {
+                setSearch('');
+                setFilterType('all');
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-stone-900 text-white font-bold text-xs"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto min-w-0">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-stone-200 text-stone-400 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="pb-3 pl-2">User / Actor</th>
+                  <th className="pb-3">Action</th>
+                  <th className="pb-3">Patient / Entity</th>
+                  <th className="pb-3">Details / Signal</th>
+                  <th className="pb-3">Device / IP</th>
+                  <th className="pb-3 pr-2 text-right">Timestamp</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-stone-100 font-mono">
+                {filteredLogs.map(log => (
+                  <tr key={log.id} className="hover:bg-stone-50/80 transition-all font-sans">
+                    
+                    {/* User */}
+                    <td className="py-3 pl-2 font-bold text-stone-900 flex items-center space-x-2">
+                      <User className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                      <span className="truncate max-w-[130px]">{log.performedBy}</span>
+                    </td>
+
+                    {/* Action */}
+                    <td className="py-3 font-semibold text-emerald-800">
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-[11px]">
+                        {log.action}
+                      </span>
+                    </td>
+
+                    {/* Patient / Entity */}
+                    <td className="py-3 text-stone-800 font-medium">
+                      {log.patientName || log.entityId}
+                    </td>
+
+                    {/* Details */}
+                    <td className="py-3 text-stone-600 text-xs font-normal max-w-xs truncate" title={log.details}>
+                      {log.details}
+                    </td>
+
+                    {/* Device / IP */}
+                    <td className="py-3 text-stone-400 text-[11px] font-mono">
+                      <div className="flex items-center space-x-1">
+                        <Laptop className="w-3 h-3 text-stone-400 shrink-0" />
+                        <span className="truncate max-w-[140px]">{log.deviceIp || '192.168.1.42'}</span>
+                      </div>
+                    </td>
+
+                    {/* Timestamp */}
+                    <td className="py-3 pr-2 text-right text-stone-500 font-mono text-xs">
+                      {log.timestamp}
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
     </div>

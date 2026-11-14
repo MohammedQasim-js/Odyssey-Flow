@@ -353,6 +353,7 @@ export interface Visit {
 export interface Appointment {
   id: string;
   patientId: string;
+  patientName?: string;
   doctorId: string;
   doctorName: string;
   doctorSpecialty: string;
@@ -427,6 +428,20 @@ export interface BillingRecord {
   status: "paid" | "pending" | "insurance_processing";
   paymentMethod?: string;
   created_at?: string;
+}
+
+export interface InsuranceClaim {
+  id: string;
+  patientId?: string;
+  patient: string;
+  insurer: string;
+  policyNo: string;
+  amount: string;
+  amountNumber?: number;
+  status: 'Approved (Cashless)' | 'Pre-Auth Verified' | 'In Review' | 'Settled' | 'Rejected';
+  date: string;
+  diagnosis?: string;
+  preAuthNotes?: string;
 }
 
 export interface NotificationRecord {

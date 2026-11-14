@@ -1,7 +1,7 @@
 import { 
   Clinic, Doctor, DoctorShift, Patient, Visit, Token, Symptom, 
   DiagnosticEvent, DiagnosticSignal, DpsSnapshot, Referral, BillingRecord, AuditLog, ClinicSettings,
-  SanctuaryPulseStateCode, Appointment
+  SanctuaryPulseStateCode, Appointment, InsuranceClaim
 } from '../types';
 import { cache, CACHE_KEYS } from './storage';
 import { DpsEngine } from './dpsEngine';
@@ -1181,6 +1181,19 @@ export const INITIAL_TOKENS: Token[] = [
 
 export const INITIAL_SHIFTS: DoctorShift[] = [
   {
+    id: 'shift_sharma_0',
+    doctorId: 'doc_sharma_1',
+    doctorName: 'Dr. A. Sharma',
+    specialty: 'General Medicine',
+    shiftName: 'Morning',
+    startTime: '08:30',
+    endTime: '16:30',
+    room: '101',
+    maxPatients: 30,
+    currentPatientCount: 18,
+    isActive: true,
+  },
+  {
     id: 'shift_1',
     doctorId: 'doc_meera_1',
     doctorName: 'Dr. Meera Nambiar',
@@ -1265,6 +1278,90 @@ export const INITIAL_BILLING: BillingRecord[] = [
     totalAmount: 550,
     status: 'paid',
     paymentMethod: 'Credit Card',
+  },
+  {
+    id: 'bill_pending_1',
+    tokenNumber: 'B-14',
+    patientId: 'pat_priya_1',
+    patientName: 'Priya Sharma',
+    doctorName: 'Dr. Arjun Shenoy',
+    clinicName: 'Odyssey Apex Health Center',
+    date: 'Today, 10:15 AM',
+    items: [
+      { description: 'Comprehensive Internal Medicine Review', amount: 950 },
+      { description: 'Liver Function Panel (LFT Order)', amount: 650 },
+    ],
+    totalAmount: 1600,
+    status: 'pending',
+  },
+  {
+    id: 'bill_pending_2',
+    tokenNumber: 'A-28',
+    patientId: 'pat_rajesh_3',
+    patientName: 'Rajesh Nair',
+    doctorName: 'Dr. Meera Nambiar',
+    clinicName: 'Odyssey Apex Health Center',
+    date: 'Today, 10:30 AM',
+    items: [
+      { description: 'Gastroenterology Diagnostic Assessment', amount: 1200 },
+      { description: 'Fecal Calprotectin Order', amount: 800 },
+    ],
+    totalAmount: 2000,
+    status: 'pending',
+  },
+];
+
+export const INITIAL_CLAIMS: InsuranceClaim[] = [
+  {
+    id: 'clm_101',
+    patientId: 'pat_aarav_0',
+    patient: 'Aarav Mehta',
+    insurer: 'Star Health & Allied',
+    policyNo: 'POL-992140',
+    amount: '₹1,250',
+    amountNumber: 1250,
+    status: 'Approved (Cashless)',
+    date: 'Today, 09:30 AM',
+    diagnosis: 'Unspecified persistent GI distress',
+    preAuthNotes: 'Automated digital verification with TPA partner Star Health. Approved for cashless token dispatch.',
+  },
+  {
+    id: 'clm_102',
+    patientId: 'pat_priya_1',
+    patient: 'Priya Sharma',
+    insurer: 'HDFC ERGO Health',
+    policyNo: 'POL-331892',
+    amount: '₹4,800',
+    amountNumber: 4800,
+    status: 'Pre-Auth Verified',
+    date: 'Today, 08:45 AM',
+    diagnosis: 'Gastroenterology Diagnostic Workup',
+    preAuthNotes: 'Pre-authorization validated under corporate group cover. Pending final clinician invoice.',
+  },
+  {
+    id: 'clm_103',
+    patientId: 'pat_rahul_2',
+    patient: 'Rajesh Nair',
+    insurer: 'Care Health Insurance',
+    policyNo: 'POL-884210',
+    amount: '₹950',
+    amountNumber: 950,
+    status: 'In Review',
+    date: 'Today, 08:15 AM',
+    diagnosis: 'Internal Medicine Follow-up',
+    preAuthNotes: 'Awaiting policyholder KYC documents or hospital discharge summary.',
+  },
+  {
+    id: 'clm_104',
+    patient: 'Vikram Patel',
+    insurer: 'Max Bupa Health',
+    policyNo: 'POL-771239',
+    amount: '₹2,400',
+    amountNumber: 2400,
+    status: 'Settled',
+    date: 'Yesterday',
+    diagnosis: 'Abdominal Ultrasound & Routine Lab Workup',
+    preAuthNotes: 'Direct bank payout completed via NEFT to clinic account.',
   },
 ];
 
@@ -1929,6 +2026,12 @@ export class DataStore {
     if (!cache.get(CACHE_KEYS.REFERRAL_RECORDS)) {
       cache.set(CACHE_KEYS.REFERRAL_RECORDS, INITIAL_REFERRALS);
     }
+    if (!cache.get(CACHE_KEYS.DOCTOR_SHIFTS)) {
+      cache.set(CACHE_KEYS.DOCTOR_SHIFTS, INITIAL_SHIFTS);
+    }
+    if (!cache.get(CACHE_KEYS.INSURANCE_CLAIMS)) {
+      cache.set(CACHE_KEYS.INSURANCE_CLAIMS, INITIAL_CLAIMS);
+    }
     // Set default active patient session to Aarav Mehta (or Priya) for instant rich demo
     if (!cache.get(CACHE_KEYS.CURRENT_PATIENT_SESSION)) {
       cache.set(CACHE_KEYS.CURRENT_PATIENT_SESSION, INITIAL_PATIENTS[0]);
@@ -2007,6 +2110,54 @@ export class DataStore {
     cache.set(CACHE_KEYS.DOCTORS_STATE, doctors);
     this.logAudit('DOCTOR_STATUS_UPDATE', 'doctor', doctorId, `Status changed to ${status}`);
     return doctors.find(d => d.id === doctorId);
+  }
+
+  static updateDoctorRoom(doctorId: string, room: string): Doctor | undefined {
+    const doctors = this.getDoctors().map(doc => {
+      if (doc.id === doctorId) {
+        return { ...doc, room };
+      }
+      return doc;
+    });
+    cache.set(CACHE_KEYS.DOCTORS_STATE, doctors);
+    this.logAudit('DOCTOR_ROOM_UPDATE', 'doctor', doctorId, `Assigned to Room ${room}`);
+    return doctors.find(d => d.id === doctorId);
+  }
+
+  static getDoctorShifts(): DoctorShift[] {
+    this.init();
+    const stored = cache.get<DoctorShift[]>(CACHE_KEYS.DOCTOR_SHIFTS);
+    if (stored && stored.length > 0) return stored;
+    cache.set(CACHE_KEYS.DOCTOR_SHIFTS, INITIAL_SHIFTS);
+    return INITIAL_SHIFTS;
+  }
+
+  static updateDoctorShift(doctorId: string, shiftData: Partial<DoctorShift>): DoctorShift[] {
+    this.init();
+    const shifts = [...this.getDoctorShifts()];
+    const index = shifts.findIndex(s => s.doctorId === doctorId);
+    if (index >= 0) {
+      shifts[index] = { ...shifts[index], ...shiftData };
+    } else {
+      const doc = this.getDoctors().find(d => d.id === doctorId);
+      shifts.push({
+        id: `shift_${Date.now()}`,
+        doctorId,
+        doctorName: doc?.name || 'Doctor',
+        specialty: doc?.specialty || 'General OPD',
+        shiftName: shiftData.shiftName || 'Morning',
+        startTime: shiftData.startTime || '08:30',
+        endTime: shiftData.endTime || '16:30',
+        room: doc?.room || '101',
+        maxPatients: 30,
+        currentPatientCount: doc?.patientsSeenToday || 0,
+        isActive: shiftData.isActive ?? true,
+        ...shiftData,
+      });
+    }
+    cache.set(CACHE_KEYS.DOCTOR_SHIFTS, shifts);
+    this.logAudit('SHIFT_UPDATED', 'doctor', doctorId, `Shift updated for doctor ${doctorId}`);
+    return shifts;
   }
 
   // --- Patients ---
@@ -3230,6 +3381,82 @@ export class DataStore {
     return records.find(b => b.id === billId || b.tokenNumber === billId);
   }
 
+  static createBillingRecord(bill: Omit<BillingRecord, 'id'> & { id?: string }): BillingRecord {
+    this.init();
+    const records = this.getBillingRecords();
+    const newBill: BillingRecord = {
+      ...bill,
+      id: bill.id || `bill_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      status: bill.status || 'pending',
+      created_at: new Date().toISOString(),
+    };
+    const updated = [newBill, ...records];
+    cache.set(CACHE_KEYS.BILLING_RECORDS, updated);
+    this.logAudit(
+      'BILLING_CREATED',
+      'billing',
+      newBill.id,
+      `Generated invoice ${newBill.id} for ${newBill.patientName} (${newBill.tokenNumber}) — ₹${newBill.totalAmount}`,
+      'Billing Desk 01',
+      '192.168.1.12 (Front Desk)',
+      newBill.patientName
+    );
+    return newBill;
+  }
+
+  // --- Insurance Claims ---
+  static getInsuranceClaims(patientId?: string): InsuranceClaim[] {
+    this.init();
+    const claims = cache.get<InsuranceClaim[]>(CACHE_KEYS.INSURANCE_CLAIMS) || INITIAL_CLAIMS;
+    return patientId ? claims.filter(c => c.patientId === patientId) : claims;
+  }
+
+  static updateClaimStatus(claimId: string, status: InsuranceClaim['status'], notes?: string): InsuranceClaim | undefined {
+    this.init();
+    const claims = this.getInsuranceClaims().map(c => {
+      if (c.id === claimId) {
+        return {
+          ...c,
+          status,
+          preAuthNotes: notes || c.preAuthNotes,
+        };
+      }
+      return c;
+    });
+    cache.set(CACHE_KEYS.INSURANCE_CLAIMS, claims);
+    this.logAudit(
+      'CLAIM_STATUS_UPDATED',
+      'billing',
+      claimId,
+      `Insurance claim ${claimId} status changed to ${status}${notes ? ` (${notes})` : ''}`,
+      'TPA Desk / Star Health Gateway',
+      '192.168.1.18 (Billing Terminal)'
+    );
+    return claims.find(c => c.id === claimId);
+  }
+
+  static createInsuranceClaim(claim: Omit<InsuranceClaim, 'id' | 'date'> & { id?: string; date?: string }): InsuranceClaim {
+    this.init();
+    const claims = this.getInsuranceClaims();
+    const newClaim: InsuranceClaim = {
+      ...claim,
+      id: claim.id || `clm_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      date: claim.date || 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    const updated = [newClaim, ...claims];
+    cache.set(CACHE_KEYS.INSURANCE_CLAIMS, updated);
+    this.logAudit(
+      'CLAIM_SUBMITTED',
+      'billing',
+      newClaim.id,
+      `Pre-authorization claim submitted to ${newClaim.insurer} for ${newClaim.patient} (${newClaim.amount})`,
+      'TPA Desk',
+      '192.168.1.18 (Billing Terminal)',
+      newClaim.patient
+    );
+    return newClaim;
+  }
+
   // --- Encounters & Visits ---
   static getVisits(patientId?: string): Visit[] {
     this.init();
@@ -3815,6 +4042,9 @@ export class DataStore {
     cache.set(CACHE_KEYS.CACHED_QUEUE, INITIAL_TOKENS);
     cache.set(CACHE_KEYS.DIAGNOSTIC_EVENTS, INITIAL_DIAGNOSTIC_EVENTS);
     cache.set(CACHE_KEYS.BILLING_RECORDS, INITIAL_BILLING);
+    cache.set(CACHE_KEYS.DOCTOR_SHIFTS, INITIAL_SHIFTS);
+    cache.set(CACHE_KEYS.INSURANCE_CLAIMS, INITIAL_CLAIMS);
+    cache.remove('odyssey_appointments');
     cache.set(CACHE_KEYS.CURRENT_PATIENT_SESSION, INITIAL_PATIENTS[0]);
     const aaravToken = INITIAL_TOKENS.find(t => t.id === 'tok_aarav_27' || t.tokenNumber === 'A-27');
     cache.set(CACHE_KEYS.ACTIVE_TOKEN, aaravToken || INITIAL_TOKENS[0]);
