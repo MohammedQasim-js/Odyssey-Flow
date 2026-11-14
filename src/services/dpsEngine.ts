@@ -20,9 +20,10 @@ import { Patient, DiagnosticEvent, Symptom, DiagnosticSignal, DpsSnapshot, Visit
  */
 
 export const SAFETY_MANDATE = {
-  BANNER_TITLE: "Process insight — not a diagnosis.",
+  BANNER_TITLE: "Process insight only — not a diagnosis or treatment recommendation.",
+  STAGNATION_TITLE: "Possible Diagnostic Stagnation — Clinical Review Recommended",
   BANNER_SUBTITLE: "Odyssey Flow evaluates diagnostic journey velocity, test redundancy, and specialist ping-pong loops. It does not predict diseases or alter pharmacological regimens.",
-  DISCLAIMER: "This analytical tool is designed strictly for clinical process optimization, queue scheduling, and physician preparation. All medical judgements remain solely with authorized clinicians."
+  DISCLAIMER: "Process insight only — not a diagnosis or treatment recommendation. This analytical tool is designed strictly for clinical process optimization, queue scheduling, and physician preparation. All medical judgements remain solely with authorized clinicians."
 };
 
 /**
@@ -148,6 +149,8 @@ export interface DoctorSnapshotData {
   dpsSlope: number;
   stagnationState: 'STAGNATION_DETECTED' | 'CONVERGING' | 'MONITORING' | 'RECOVERING';
   stagnationFlag: boolean;
+  stagnationReason: string;
+  confidence: number;
   topSignals: {
     title: string;
     description: string;
@@ -188,6 +191,7 @@ export interface PreConsultationSnapshot {
   recommendedConsultationAction: string;
   recommendedInvestigationsToConsider: string[];
   dpsSlope?: number;
+  confidence?: number;
   explainability: string[];
   queueRecommendations: {
     priorityAdjustment: string;
@@ -224,7 +228,7 @@ export class DpsEngine {
    * Evaluates semantic recurrence of complaints across historical encounters.
    * Returns repeatComplaintScore (0 - 100) where 100 = high repetition/friction.
    */
-  static computeRepeatComplaintScore(complaints: string[]): {
+  static computeRepeatComplaintScore(complaints: string[], resolvedFlags?: boolean[]): {
     score: number;
     dominantCluster: string;
     repetitionCount: number;
@@ -272,6 +276,11 @@ export class DpsEngine {
       score = 50;
     } else {
       score = 15;
+    }
+
+    // If latest encounter confirms resolution, complaint recurrence penalty is relieved
+    if (resolvedFlags && resolvedFlags.length > 0 && resolvedFlags[resolvedFlags.length - 1]) {
+      score = Math.min(20, Math.round(score * 0.25));
     }
 
     const readableClusterName = dominantCluster.replace('_', ' ').toUpperCase();
@@ -338,6 +347,11 @@ export class DpsEngine {
     // Hops + Loop penalty + Diversity penalty
     let score = Math.min(100, Math.round((hopCount * 18) + (loopCount * 25) + ((uniqueCount - 1) * 15)));
 
+    // If latest encounters stabilized with targeted subspecialist (no recent transitions), dampen penalty
+    if (specialties.length >= 2 && specialties[specialties.length - 1] === specialties[specialties.length - 2]) {
+      score = Math.round(score * 0.4);
+    }
+
     const transitionChain = specialties.join(' → ');
     const description = hopCount >= 2
       ? `High transition intensity: ${hopCount} specialty transitions across ${uniqueCount} distinct specialties with ${loopCount} circular handoff loops.`
@@ -374,8 +388,11 @@ export class DpsEngine {
 
     if (events) {
       events.forEach(e => {
-        if (e.eventType) flatTests.push(e.eventType.toLowerCase());
-        if (e.title) flatTests.push(e.title.toLowerCase());
+        // Conclusive diagnostic investigations are yield-bearing breakthroughs, not unyielding redundancies
+        if (!e.isConclusive) {
+          if (e.eventType) flatTests.push(e.eventType.toLowerCase());
+          if (e.title) flatTests.push(e.title.toLowerCase());
+        }
       });
     }
 
@@ -386,10 +403,11 @@ export class DpsEngine {
     const modalityRules: Record<string, string[]> = {
       'Cranial MRI': ['mri brain', 'brain mri', 'cranial mri', 'iac protocol', 'mri head'],
       'Whole Abdomen Ultrasound': ['ultrasound', 'usg', 'sonography', 'us abdomen'],
-      'Complete Blood Count (CBC)': ['cbc', 'complete blood count', 'hemogram', 'hematology'],
+      'Complete Blood Count (CBC)': ['cbc', 'complete blood count', 'hemogram'],
       'Abdominal / Cranial CT': ['ct scan', 'computed tomography', 'cat scan'],
       'Liver Function Panel': ['lft', 'liver function test', 'serum amylase', 'lipase'],
-      'Autoimmune Serology': ['ana', 'rheumatoid factor', 'esr', 'crp', 'anti-ccp']
+      'Inflammatory Serology (ESR/CRP)': ['esr', 'crp', 'c-reactive protein'],
+      'ANA Autoantibody Screen': ['ana', 'antinuclear antibody'],
     };
 
     const modalityCounts: Record<string, number> = {};
@@ -440,6 +458,7 @@ export class DpsEngine {
   /**
    * Tracks changes in recorded clinical hypotheses (Hypothesis A -> B -> C -> A).
    * Computes prototype hypothesis-instability measure: hypothesisEntropy (0 - 100).
+   * Semantic concordance is recognized (e.g. "Suspected H. pylori" -> "Conclusive: H. pylori" is convergence, not churn).
    */
   static computeHypothesisEntropy(hypotheses: string[]): {
     score: number;
@@ -459,24 +478,39 @@ export class DpsEngine {
       };
     }
 
-    // Measure churn (changes from visit i to i+1)
+    const stopWords = new Set([
+      'suspected', 'rule', 'out', 'r/o', 'vs', 'acute', 'chronic', 'conclusive', 
+      'resolved', 'active', 'completed', 'discharged', 'care', 'evaluation', 
+      'presentation', 'under', 'investigation', 'follow-up', 'review', 'therapy', 
+      'treatment', 'patient', 'mild', 'severe', 'possible', 'unspecified'
+    ]);
+
+    const getKeywords = (str: string) => 
+      str.toLowerCase().replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+
+    // Measure hypothesis churn (switching away to an unrelated clinical hypothesis)
     let churnCount = 0;
     for (let i = 1; i < valid.length; i++) {
-      if (valid[i].toLowerCase() !== valid[i - 1].toLowerCase()) {
+      const prevKw = getKeywords(valid[i - 1]);
+      const currKw = getKeywords(valid[i]);
+      const sharesKeyword = prevKw.some(kw => currKw.includes(kw));
+
+      if (!sharesKeyword && valid[i].toLowerCase() !== valid[i - 1].toLowerCase()) {
         churnCount++;
       }
     }
 
     // Calculate frequency distribution and Shannon entropy
-    const counts: Record<string, number> = {};
+    const clusterMap: Record<string, number> = {};
     valid.forEach(h => {
-      const normalized = h.toLowerCase().trim();
-      counts[normalized] = (counts[normalized] || 0) + 1;
+      const kw = getKeywords(h);
+      const root = kw[0] || h.toLowerCase().trim();
+      clusterMap[root] = (clusterMap[root] || 0) + 1;
     });
 
     const N = valid.length;
     let entropy = 0;
-    for (const count of Object.values(counts)) {
+    for (const count of Object.values(clusterMap)) {
       const p = count / N;
       if (p > 0) {
         entropy -= p * Math.log2(p);
@@ -485,11 +519,17 @@ export class DpsEngine {
 
     const maxPossibleEntropy = Math.log2(N);
     const normalizedEntropy = maxPossibleEntropy > 0 ? (entropy / maxPossibleEntropy) : 0;
-    const distinctHypotheses = Object.keys(counts);
+    const distinctHypotheses = Object.keys(clusterMap);
 
     // Score combines normalized entropy and churn rate
     const churnRatio = churnCount / (N - 1);
-    const score = Math.min(100, Math.round((normalizedEntropy * 60) + (churnRatio * 40)));
+    let score = Math.min(100, Math.round((normalizedEntropy * 60) + (churnRatio * 40)));
+
+    // If latest hypothesis indicates conclusive diagnosis or resolution, reward convergence
+    const latest = valid[valid.length - 1].toLowerCase();
+    if (latest.includes('resolved') || latest.includes('conclusive') || latest.includes('remission')) {
+      score = Math.max(0, Math.round(score * 0.3));
+    }
 
     const description = score > 50
       ? `Elevated hypothesis instability (entropy: ${entropy.toFixed(2)} bits). Clinical working impression changed ${churnCount} times across ${N} visits.`
@@ -618,7 +658,11 @@ export class DpsEngine {
       (detectedPhrases.length * 15)
     ));
 
-    if (unresolvedCount === 0 && therapySwitchesCount === 0) {
+    // If the latest encounter confirmed resolution, strongly reward treatment closure
+    const isLatestResolved = resolvedFlags.length > 0 && resolvedFlags[resolvedFlags.length - 1];
+    if (isLatestResolved) {
+      score = Math.max(5, Math.min(20, Math.round(score * 0.2)));
+    } else if (unresolvedCount === 0 && therapySwitchesCount === 0) {
       score = 10;
     }
 
@@ -712,9 +756,16 @@ export class DpsEngine {
       const notes = historicalSlice.map(v => v.notes || '');
       const resolvedFlags = historicalSlice.map(v => !!v.resolved);
 
-      const sigRepeat = this.computeRepeatComplaintScore(complaints);
+      const sigRepeat = this.computeRepeatComplaintScore(complaints, resolvedFlags);
       const sigTrans = this.computeSpecialistTransitionIntensity(specialties);
-      const sigRedun = this.computeTestRedundancyScore(tests, events);
+      const historicalEvents = (events || []).filter(e => {
+        if (!e.date || !visit.date) return true;
+        const eTime = new Date(e.date).getTime();
+        const vTime = new Date(visit.date).getTime();
+        if (isNaN(eTime) || isNaN(vTime)) return true;
+        return eTime <= vTime;
+      });
+      const sigRedun = this.computeTestRedundancyScore(tests, historicalEvents);
       const sigHyp = this.computeHypothesisEntropy(hypotheses);
       const sigUnc = this.computeNoteUncertaintyScore(notes);
       const sigTreat = this.computeTreatmentNonResolutionScore(treatments, resolvedFlags, notes);
@@ -815,9 +866,9 @@ export class DpsEngine {
     const encountersElapsed = windowSize - 1;
     const dpsSlope = parseFloat(((scoreEnd - scoreStart) / (encountersElapsed || 1)).toFixed(2));
 
-    // Check for recovery pattern: previously stagnant, then recent sharp jump (> 10 points)
+    // Check for recovery pattern: previously stagnant, then recent sharp jump (slope >= 6 or delta >= 10)
     const hasPriorStagnation = trajectory.slice(0, n - 1).some(t => t.isStagnant || t.dpsScore < 65);
-    if (hasPriorStagnation && dpsSlope >= 6.0 && currentScore >= 75) {
+    if (hasPriorStagnation && (dpsSlope >= 6.0 || (trajectory[n - 1] && trajectory[n - 1].delta >= 10))) {
       return {
         stagnationFlag: false,
         stagnationState: 'RECOVERING',
@@ -829,12 +880,12 @@ export class DpsEngine {
 
     // Check for active stagnation
     if (n >= cfg.minEncountersForStagnation) {
-      if (dpsSlope <= cfg.stagnationThresholdSlope && currentScore < 70) {
+      if ((dpsSlope <= cfg.stagnationThresholdSlope && currentScore < 70) || currentScore <= 50) {
         return {
           stagnationFlag: true,
           stagnationState: 'STAGNATION_DETECTED',
           dpsSlope,
-          stagnationReason: `Potential diagnostic journey stagnation detected: DPS trajectory plateaued (slope: ${dpsSlope} pts/visit) across ${n} encounters without diagnostic closure.`,
+          stagnationReason: `Possible Diagnostic Stagnation — Clinical Review Recommended: DPS trajectory plateaued (slope: ${dpsSlope} pts/visit) across ${n} encounters without diagnostic closure.`,
           confidence: 85
         };
       }
@@ -1130,6 +1181,8 @@ export class DpsEngine {
       dpsSlope: stagnationResult.dpsSlope,
       stagnationState: stagnationResult.stagnationState,
       stagnationFlag: stagnationResult.stagnationFlag,
+      stagnationReason: stagnationResult.stagnationReason,
+      confidence: stagnationResult.confidence,
       topSignals,
       explainability,
       queueRecommendations,
@@ -1314,6 +1367,7 @@ export class DpsEngine {
         'Direct Senior Multidisciplinary Diagnostic Board Review',
       ],
       dpsSlope: docSnapshot.dpsSlope,
+      confidence: docSnapshot.confidence,
       explainability: docSnapshot.explainability,
       queueRecommendations: docSnapshot.queueRecommendations,
       generatedAt: new Date().toISOString(),

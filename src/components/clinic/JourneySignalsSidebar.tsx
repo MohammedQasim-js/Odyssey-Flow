@@ -13,6 +13,10 @@ interface JourneySignalsSidebarProps {
   onPrepareSnapshot: () => void;
   onEscalateMDT: () => void;
   onSelectReferral?: (specialty: string) => void;
+  explainability?: string[];
+  concern?: string;
+  specialist?: string;
+  isStagnant?: boolean;
 }
 
 export const JourneySignalsSidebar: React.FC<JourneySignalsSidebarProps> = ({
@@ -23,6 +27,10 @@ export const JourneySignalsSidebar: React.FC<JourneySignalsSidebarProps> = ({
   onPrepareSnapshot,
   onEscalateMDT,
   onSelectReferral,
+  explainability,
+  concern = 'Persistent headache',
+  specialist = 'General Medicine',
+  isStagnant = true,
 }) => {
   return (
     <div className="space-y-6">
@@ -30,9 +38,9 @@ export const JourneySignalsSidebar: React.FC<JourneySignalsSidebarProps> = ({
       {/* 1. AI BOUNDARY (Restrained, crisp banner) */}
       <div className="p-3 rounded-2xl bg-stone-100/90 border border-stone-200/80 flex items-center justify-between text-xs">
         <div className="flex items-center space-x-2">
-          <ShieldAlert className="w-3.5 h-3.5 text-stone-600" />
+          <ShieldAlert className="w-3.5 h-3.5 text-stone-600 shrink-0" />
           <span className="font-bold text-stone-800">
-            Process insight — not a diagnosis.
+            Process insight only — not a diagnosis or treatment recommendation.
           </span>
         </div>
         <span className="text-[10px] text-stone-500 font-medium">
@@ -41,39 +49,60 @@ export const JourneySignalsSidebar: React.FC<JourneySignalsSidebarProps> = ({
       </div>
 
       {/* 2. WHY THIS WAS FLAGGED (Prominent but restrained explanation box) */}
-      <div className="bg-amber-50/70 border border-amber-300 rounded-3xl p-5 shadow-2xs space-y-3">
+      <div className={`border rounded-3xl p-5 shadow-2xs space-y-3 ${
+        isStagnant ? 'bg-amber-50/70 border-amber-300' : 'bg-emerald-50/70 border-emerald-300'
+      }`}>
         <div className="flex items-center space-x-2">
-          <AlertTriangle className="w-4 h-4 text-amber-800" />
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-950">
-            Why review is recommended
+          {isStagnant ? (
+            <AlertTriangle className="w-4 h-4 text-amber-800" />
+          ) : (
+            <CheckCircle className="w-4 h-4 text-emerald-800" />
+          )}
+          <h4 className={`text-xs font-extrabold uppercase tracking-wider ${
+            isStagnant ? 'text-amber-950' : 'text-emerald-950'
+          }`}>
+            {isStagnant ? 'Possible Diagnostic Stagnation — Clinical Review Recommended' : 'Trajectory Under Active Monitoring'}
           </h4>
         </div>
         
-        <p className="text-xs text-amber-900 font-medium leading-relaxed">
-          The longitudinal journey analyzer identified patterns consistent with diagnostic circularity:
+        <p className={`text-xs font-medium leading-relaxed ${isStagnant ? 'text-amber-900' : 'text-emerald-900'}`}>
+          {isStagnant
+            ? 'The longitudinal journey analyzer identified patterns consistent with diagnostic circularity:'
+            : 'Diagnostic progress score is progressing towards clinical resolution:'}
         </p>
 
-        <ul className="space-y-2 text-xs text-amber-900 font-medium">
-          <li className="flex items-start space-x-2">
-            <span className="text-amber-700 font-bold">•</span>
-            <span>Same complaint appears across multiple encounters</span>
-          </li>
-          <li className="flex items-start space-x-2">
-            <span className="text-amber-700 font-bold">•</span>
-            <span>Patient transitioned between 3 specialties</span>
-          </li>
-          <li className="flex items-start space-x-2">
-            <span className="text-amber-700 font-bold">•</span>
-            <span>Similar investigation was repeated</span>
-          </li>
-          <li className="flex items-start space-x-2">
-            <span className="text-amber-700 font-bold">•</span>
-            <span>Clinical note uncertainty remained elevated</span>
-          </li>
-          <li className="flex items-start space-x-2">
-            <span className="text-amber-700 font-bold">•</span>
-            <span>DPS remained nearly flat recently</span>
-          </li>
+        <ul className={`space-y-2 text-xs font-medium ${isStagnant ? 'text-amber-900' : 'text-emerald-900'}`}>
+          {explainability && explainability.length > 0 ? (
+            explainability.map((item, idx) => (
+              <li key={idx} className="flex items-start space-x-2">
+                <span className={isStagnant ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold'}>•</span>
+                <span>{item}</span>
+              </li>
+            ))
+          ) : (
+            <>
+              <li className="flex items-start space-x-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span>Same complaint appears across multiple encounters</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span>Patient transitioned between 3 specialties</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span>Similar investigation was repeated</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span>Clinical note uncertainty remained elevated</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span>DPS remained nearly flat recently</span>
+              </li>
+            </>
+          )}
         </ul>
       </div>
 

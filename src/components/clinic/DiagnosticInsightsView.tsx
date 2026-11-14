@@ -232,10 +232,10 @@ export const DiagnosticInsightsView: React.FC<DiagnosticInsightsViewProps> = ({
               <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold block text-[11px] text-amber-900 uppercase tracking-tight">
-                  Clinical Process Intelligence
+                  {SAFETY_MANDATE.BANNER_TITLE}
                 </span>
                 <p className="text-[11px] text-amber-800 leading-snug mt-0.5">
-                  Identifies journey stagnation and operational friction. Avoids medical predictions, automated disease diagnoses, or prescribing.
+                  Possible Diagnostic Stagnation — Clinical Review Recommended. Evaluates journey velocity, test redundancy, and specialist loops without predicting diseases or prescribing.
                 </p>
               </div>
             </div>

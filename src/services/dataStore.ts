@@ -2621,17 +2621,131 @@ export class DataStore {
     return updatedToken;
   }
 
-  static completeVisit(tokenId: string): Token | undefined {
+  static completeVisit(
+    tokenId: string,
+    consultationData?: {
+      diagnosis?: string;
+      notes?: string;
+      prescriptionSummary?: string;
+      testsOrdered?: string[];
+      resolved?: boolean;
+      newEvent?: {
+        title: string;
+        eventType: string;
+        facility: string;
+        resultSummary: string;
+        isConclusive: boolean;
+        conclusivenessScore: number;
+        findings?: string;
+      };
+    }
+  ): Token | undefined {
     let queue = [...this.getQueue()];
     const index = queue.findIndex(t => t.id === tokenId || t.tokenNumber === tokenId);
     if (index === -1) return undefined;
 
     const target = queue[index];
+    const patient = this.getPatient(target.patientId) || this.getPatients().find(p => p.id === target.patientId);
+
+    // 1. Build and persist the new clinical encounter / visit
+    const visits = [...this.getVisits()];
+    const newVisitId = target.visitId || `vis_${target.patientId}_${Date.now()}`;
+    const newVisit: Visit = {
+      id: newVisitId,
+      patientId: target.patientId,
+      patient_id: target.patientId,
+      clinicId: target.clinicId || 'clinic_apex_1',
+      clinic_id: target.clinicId || 'clinic_apex_1',
+      clinicName: target.clinicName || 'Odyssey Care Clinic',
+      doctorId: target.doctorId || 'doc_sharma_1',
+      doctor_id: target.doctorId || 'doc_sharma_1',
+      doctorName: target.doctorName || 'Dr. A. Sharma',
+      specialty: target.specialty || 'General Medicine',
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+      reason: target.symptomsSummary || 'Clinical evaluation & review',
+      chiefComplaint: target.symptomsSummary || 'Consultation intake',
+      status: 'completed',
+      diagnosis: consultationData?.diagnosis || (target.stagnationFlag ? 'Diagnostic Review: Trajectory evaluated • Multidisciplinary panel recommended' : 'Clinical evaluation completed • Definitive treatment established'),
+      notes: consultationData?.notes || 'Patient evaluated by attending clinician. Diagnostic progress score and longitudinal history reviewed.',
+      prescriptionSummary: consultationData?.prescriptionSummary || 'Targeted therapeutic protocol and clinical monitoring schedule',
+      testsOrdered: consultationData?.testsOrdered || (target.stagnationFlag ? ['Targeted Specialty Panel'] : []),
+      resolved: consultationData?.resolved ?? (!target.stagnationFlag),
+    };
+
+    const existingVisitIdx = visits.findIndex(v => v.id === newVisitId);
+    if (existingVisitIdx >= 0) {
+      visits[existingVisitIdx] = { ...visits[existingVisitIdx], ...newVisit };
+    } else {
+      visits.unshift(newVisit);
+    }
+    cache.set(CACHE_KEYS.VISIT_RECORDS, visits);
+
+    // 2. Persist new diagnostic event if present
+    let events = [...this.getDiagnosticEvents()];
+    if (consultationData?.newEvent) {
+      const newEvt: DiagnosticEvent = {
+        id: `evt_${Date.now()}`,
+        patientId: target.patientId,
+        visitId: newVisitId,
+        date: new Date().toISOString().split('T')[0],
+        eventType: consultationData.newEvent.eventType,
+        facility: consultationData.newEvent.facility || target.clinicName || 'Odyssey Diagnostics Hub',
+        title: consultationData.newEvent.title,
+        resultSummary: consultationData.newEvent.resultSummary,
+        isConclusive: consultationData.newEvent.isConclusive,
+        conclusivenessScore: consultationData.newEvent.conclusivenessScore,
+        findings: consultationData.newEvent.findings || consultationData.newEvent.resultSummary,
+        orderedBy: target.doctorName,
+      };
+      events.unshift(newEvt);
+      cache.set(CACHE_KEYS.DIAGNOSTIC_EVENTS, events);
+    }
+
+    // 3. Recalculate patient trajectory, DPS & stagnation state
+    let updatedDps = target.dpsScore || 65;
+    let updatedStagnation = target.stagnationFlag;
+
+    if (patient) {
+      const patientVisits = visits.filter(v => v.patientId === patient.id);
+      const patientEvents = events.filter(e => e.patientId === patient.id);
+      const patientSymptoms = this.getSymptoms(patient.id);
+
+      const trajectory = DpsEngine.computeTrajectory(patient, patientVisits, patientEvents, patientSymptoms);
+      const stagnationRes = DpsEngine.detectStagnation(trajectory);
+      const dpsSnapshot = DpsEngine.computeDPS(patient, patientEvents, patientSymptoms, patientVisits);
+
+      updatedDps = dpsSnapshot.score;
+      updatedStagnation = stagnationRes.stagnationFlag;
+
+      // Update patient profile
+      const patients = this.getPatients().map(p => {
+        if (p.id === patient.id) {
+          return {
+            ...p,
+            currentDps: updatedDps,
+            hasStagnation: updatedStagnation,
+            activeJourneySummary: `Encounter completed (${newVisit.specialty}). DPS: ${updatedDps}/100. ${stagnationRes.stagnationReason}`,
+          };
+        }
+        return p;
+      });
+      cache.set(CACHE_KEYS.PATIENT_RECORDS, patients);
+
+      // Save DPS Snapshot to cache
+      const snapshots = cache.get<DpsSnapshot[]>(CACHE_KEYS.DPS_SNAPSHOTS) || [];
+      snapshots.unshift(dpsSnapshot);
+      cache.set(CACHE_KEYS.DPS_SNAPSHOTS, snapshots);
+    }
+
+    // 4. Update Token in Queue
     const updatedToken: Token = {
       ...target,
       status: 'completed',
       queuePosition: -1,
       estimatedWaitMin: 0,
+      sanctuary_state: 'COMPLETED',
+      dpsScore: updatedDps,
+      stagnationFlag: updatedStagnation,
     };
     queue[index] = updatedToken;
 
@@ -2667,14 +2781,22 @@ export class DataStore {
       'VISIT_COMPLETED',
       'token',
       target.id,
-      `Consultation completed for Token ${target.tokenNumber}. Diagnostic summaries synced.`,
+      `Consultation completed for Token ${target.tokenNumber}. Encounter saved. DPS recalculated to ${updatedDps}/100.`,
       target.doctorName,
       '192.168.1.42 (Station 01)',
       target.patientName
     );
 
     // Asynchronous Supabase synchronization
-    SupabaseService.doctorCompleteConsultationFlow(target.id).catch(err => {
+    SupabaseService.doctorCompleteConsultationFlow({
+      tokenId: target.id,
+      diagnosis: newVisit.diagnosis,
+      notes: newVisit.notes,
+      prescriptionSummary: newVisit.prescriptionSummary,
+      resolved: newVisit.resolved,
+      newDpsScore: updatedDps,
+      newEvent: consultationData?.newEvent,
+    }).catch(err => {
       console.warn('[Supabase] doctorCompleteConsultationFlow error:', err);
     });
 
@@ -3183,36 +3305,100 @@ export class DataStore {
     return patientId ? referrals.filter(r => r.patientId === patientId) : referrals;
   }
 
-  static createReferral(referralData: Omit<Referral, 'id'> & { id?: string }): Referral {
+  static createReferral(referralData: Omit<Referral, 'id' | 'date' | 'status'> & { id?: string; date?: string; status?: string }): Referral {
     this.init();
     const referrals = this.getReferrals();
+    const patient = this.getPatient(referralData.patientId) || this.getPatients().find(p => p.id === referralData.patientId);
+
+    // 1. Generate specialty-specific referral token number if not provided
+    const specialtyPrefix = (referralData.toSpecialty || 'SPE').replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase();
+    const randomNum = Math.floor(10 + Math.random() * 90);
+    const referralTokenNum = referralData.referralToken || `${specialtyPrefix}-${randomNum}`;
+
     const newReferral: Referral = {
       id: referralData.id || `ref_${Date.now()}`,
       patientId: referralData.patientId,
+      patient_id: referralData.patientId,
       patientName: referralData.patientName,
       fromDoctorId: referralData.fromDoctorId,
       fromDoctorName: referralData.fromDoctorName,
       toSpecialty: referralData.toSpecialty,
       reason: referralData.reason,
-      priority: referralData.priority || 'Urgent',
+      priority: referralData.priority || 'Recommended',
       status: referralData.status || 'Pending',
+      referralToken: referralTokenNum,
       specialistQueuePosition: referralData.specialistQueuePosition || (referrals.length + 1),
       date: referralData.date || 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       clinicalNotes: referralData.clinicalNotes || 'Odyssey DPS Escalation Referral',
     };
-    const updated = [newReferral, ...referrals];
-    cache.set(CACHE_KEYS.REFERRAL_RECORDS, updated);
+
+    const updatedReferrals = [newReferral, ...referrals.filter(r => r.id !== newReferral.id)];
+    cache.set(CACHE_KEYS.REFERRAL_RECORDS, updatedReferrals);
+
+    // 2. Insert specialty-specific referral token into live queue
+    let queue = [...this.getQueue()];
+    const queueTokenId = `tok_${newReferral.id}`;
+    const isUrgent = newReferral.priority === 'Urgent' || newReferral.priority === 'urgent';
+    const targetQueuePos = isUrgent ? 1 : queue.filter(t => t.status === 'waiting').length + 1;
+
+    const specialtyQueueToken: Token = {
+      id: queueTokenId,
+      tokenNumber: referralTokenNum,
+      patientId: newReferral.patientId,
+      patientName: newReferral.patientName,
+      patientAge: patient?.age || 40,
+      patientGender: patient?.gender || 'Other',
+      clinicId: 'clinic_apex_1',
+      clinicName: 'Odyssey Apex Health Center',
+      doctorId: 'doc_meera_1',
+      doctorName: newReferral.toSpecialty.toLowerCase().includes('neuro') ? 'Dr. Vikramaditya Sen' : 'Dr. Meera Nambiar',
+      specialty: newReferral.toSpecialty,
+      status: 'waiting',
+      priority: isUrgent ? 'urgent' : 'high',
+      queuePosition: targetQueuePos,
+      estimatedWaitMin: targetQueuePos * 8,
+      sanctuary_state: 'QUEUE_STABLE',
+      checkInTime: 'Just now',
+      dpsScore: patient?.currentDps || 63,
+      stagnationFlag: patient?.hasStagnation ?? true,
+      stagnationReason: `Specialist Referral: ${newReferral.reason}`,
+      symptomsSummary: `Referral Intake: ${newReferral.reason}`,
+      department: newReferral.toSpecialty,
+    };
+
+    queue = [specialtyQueueToken, ...queue.filter(t => t.id !== queueTokenId && t.tokenNumber !== referralTokenNum)];
+    cache.set(CACHE_KEYS.CACHED_QUEUE, queue);
+
+    // 3. Include in patient's longitudinal journey as a DiagnosticEvent
+    const events = this.getDiagnosticEvents();
+    const journeyEvtId = `evt_ref_${newReferral.id}`;
+    const journeyEvt: DiagnosticEvent = {
+      id: journeyEvtId,
+      patientId: newReferral.patientId,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+      eventType: 'specialist_consult',
+      facility: 'Odyssey Specialist Hub',
+      title: `Specialist Referral: ${newReferral.toSpecialty} (${referralTokenNum})`,
+      resultSummary: `Referred by ${newReferral.fromDoctorName} (${newReferral.priority}): ${newReferral.reason}`,
+      isConclusive: false,
+      conclusivenessScore: 50,
+      findings: newReferral.clinicalNotes || 'Closed-loop referral initiated to break diagnostic stagnation.',
+      orderedBy: newReferral.fromDoctorName,
+    };
+    cache.set(CACHE_KEYS.DIAGNOSTIC_EVENTS, [journeyEvt, ...events.filter(e => e.id !== journeyEvtId)]);
+
+    // 4. Log operational audit
     this.logAudit(
       'REFERRAL_CREATED',
       'referral',
       newReferral.id,
-      `Specialist referral created for ${newReferral.patientName} to ${newReferral.toSpecialty}`,
+      `Specialist referral created for ${newReferral.patientName} to ${newReferral.toSpecialty} (Token ${referralTokenNum}). Enqueued in specialty queue & journey.`,
       newReferral.fromDoctorName,
       '192.168.1.42 (Station 01)',
       newReferral.patientName
     );
 
-    // Asynchronous Supabase synchronization
+    // 5. Asynchronous Supabase synchronization
     SupabaseService.createReferralFlow(newReferral).catch(err => {
       console.warn('[Supabase] createReferral error:', err);
     });

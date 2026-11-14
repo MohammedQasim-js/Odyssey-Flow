@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   AlertTriangle, CheckCircle2, Clock, FileText, Share2, 
   Stethoscope, X, ChevronRight, Sparkles, ShieldAlert, 
   ArrowRight, User, Plus, TrendingDown, Layers, Eye, 
-  Check, ExternalLink, Calendar, RefreshCw, Lock
+  Check, ExternalLink, Calendar, RefreshCw, Lock, TrendingUp
 } from 'lucide-react';
 import { Token, Patient, Referral } from '../../types';
 import { DataStore } from '../../services/dataStore';
-import { DpsEngine } from '../../services/dpsEngine';
+import { DpsEngine, SAFETY_MANDATE } from '../../services/dpsEngine';
 
 interface PreConsultationSnapshotModalProps {
   token: Token;
@@ -91,11 +91,20 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
   const symptoms = DataStore.getSymptoms(patient.id);
   const isConsentDeclined = token.consent_status === 'declined' || patient.consent_status === 'declined';
 
+  // Dynamically compute doctor snapshot and trajectory
+  const docSnapshot = useMemo(() => {
+    return DpsEngine.generateDoctorSnapshot(patient, visits, events, symptoms);
+  }, [patient, visits, events, symptoms]);
+
+  const trajectory = useMemo(() => {
+    return DpsEngine.computeTrajectory(patient, visits, events, symptoms);
+  }, [patient, visits, events, symptoms]);
+
   // Standard patient header details
-  const patientName = patient.fullName || 'Aarav Mehta';
+  const patientName = patient.fullName || patient.name || 'Patient';
   const patientAge = patient.age || 42;
   const tokenNumber = token.tokenNumber || 'A-27';
-  const currentConcern = token.symptomsSummary || 'Persistent headache';
+  const currentConcern = token.symptomsSummary || patient.activeJourneySummary || 'Persistent clinical concern';
   const doctorName = token.doctorName || 'Dr. Sharma';
   
   // Sanctuary Pulse state context
@@ -116,24 +125,28 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
     DataStore.startConsultation(token.id);
   };
 
-  // Complete Consultation Handler
+  // Complete Consultation Handler (Consultation Loop)
   const handleCompleteConsultation = () => {
-    DataStore.completeVisit(token.id);
+    DataStore.completeVisit(token.id, {
+      diagnosis: currentConcern ? `Consultation review: ${currentConcern}` : undefined,
+      notes: clinicalNoteText || undefined,
+      resolved: !docSnapshot.stagnationFlag,
+    });
     onClose();
   };
 
-  // Submit Referral Handler
+  // Submit Referral Handler (Referral Loop)
   const handleCreateReferralSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newRef = DataStore.createDemoNeurologyReferral({
+    const newRef = DataStore.createReferral({
       patientId: patient.id,
       patientName: patientName,
+      fromDoctorId: token.doctorId || 'doc_sharma_1',
       fromDoctorName: doctorName,
       toSpecialty: referralSpecialty,
       priority: referralPriority,
       reason: referralReason,
       clinicalNotes: referralNote,
-      referralToken: 'NEU-04',
       status: 'Pending',
     });
     setCreatedReferral(newRef);
@@ -158,25 +171,39 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
     }, 2000);
   };
 
-  // Simplified Journey Mini-Timeline Nodes
-  const miniTimeline = [
-    { month: 'Jan', specialty: 'General Medicine', note: 'Initial intake for tension cephalalgia', status: 'done' },
-    { month: 'Feb', specialty: 'Neurology', note: 'First baseline neuro screening', status: 'done' },
-    { month: 'Mar', specialty: 'MRI', note: 'Non-contrast brain scan (unremarkable)', status: 'done' },
-    { month: 'Apr', specialty: 'ENT', note: 'Nasal endoscopy (sinuses clear)', status: 'done' },
-    { month: 'May', specialty: 'Repeat MRI', note: 'Duplicate brain scan (no new yield)', status: 'done' },
-    { month: 'Jun', specialty: 'Current Review', note: 'Stagnation review with Dr. Sharma', status: 'current' },
-  ];
+  // Dynamic Journey Mini-Timeline Nodes derived from chronological encounters
+  const miniTimeline = useMemo(() => {
+    if (trajectory.length === 0) {
+      return [{
+        month: 'Today',
+        specialty: token.specialty || 'General Medicine',
+        note: token.symptomsSummary || 'Intake presentation',
+        status: 'current' as const,
+      }];
+    }
+    return trajectory.map((node, i) => ({
+      month: node.date,
+      specialty: node.specialty,
+      note: node.milestone || node.hypothesis || node.complaint,
+      status: i === trajectory.length - 1 ? ('current' as const) : ('done' as const),
+    }));
+  }, [trajectory, token]);
 
-  // DPS Trajectory Nodes: 71 -> 69 -> 65 -> 64 -> 63 -> 63
-  const dpsTrajectory = [
-    { encounter: 'Enc 1', score: 71, label: 'Jan' },
-    { encounter: 'Enc 2', score: 69, label: 'Feb' },
-    { encounter: 'Enc 3', score: 65, label: 'Mar' },
-    { encounter: 'Enc 4', score: 64, label: 'Apr' },
-    { encounter: 'Enc 5', score: 63, label: 'May' },
-    { encounter: 'Enc 6', score: 63, label: 'Jun (Current)' },
-  ];
+  // Dynamic DPS Trajectory Nodes derived from actual encounters
+  const dpsTrajectory = useMemo(() => {
+    if (trajectory.length === 0) {
+      return [{
+        encounter: 'Enc 1',
+        score: docSnapshot.currentDps || 70,
+        label: 'Today',
+      }];
+    }
+    return trajectory.map(node => ({
+      encounter: `Enc ${node.encounterNumber}`,
+      score: node.dpsScore,
+      label: node.date,
+    }));
+  }, [trajectory, docSnapshot]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -620,6 +647,19 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
             ======================================================== */
             <div className="space-y-6">
 
+              {/* Safety Mandate Banner */}
+              <div className="p-3.5 rounded-2xl bg-stone-100 border border-stone-200/90 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center space-x-2">
+                  <ShieldAlert className="w-4 h-4 text-stone-600 shrink-0" />
+                  <span className="font-bold text-stone-800">
+                    Process insight only — not a diagnosis or treatment recommendation.
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono text-stone-500">
+                  Confidence: {docSnapshot.confidence}% • Illustrative Process Metric
+                </span>
+              </div>
+
               {/* ========================================================
                   TOP SUMMARY: 4 COMPACT METRICS
               ======================================================== */}
@@ -631,11 +671,11 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                     Journey Duration
                   </span>
                   <div className="mt-1.5 flex items-baseline space-x-1">
-                    <span className="text-2xl font-black text-stone-900">7</span>
-                    <span className="text-xs font-semibold text-stone-500">months</span>
+                    <span className="text-xl sm:text-2xl font-black text-stone-900">{docSnapshot.journeyDurationFormatted.split(' ')[0]}</span>
+                    <span className="text-xs font-semibold text-stone-500">{docSnapshot.journeyDurationFormatted.split(' ')[1] || 'months'}</span>
                   </div>
-                  <span className="text-[10px] text-stone-400 block mt-1">
-                    Since Jan 2024 initial intake
+                  <span className="text-[10px] text-stone-400 block mt-1 truncate">
+                    {docSnapshot.journeyDurationDays} days observed
                   </span>
                 </div>
 
@@ -645,7 +685,7 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                     Encounters
                   </span>
                   <div className="mt-1.5 flex items-baseline space-x-1">
-                    <span className="text-2xl font-black text-stone-900">6</span>
+                    <span className="text-2xl font-black text-stone-900">{docSnapshot.encounterCount}</span>
                     <span className="text-xs font-semibold text-stone-500">visits</span>
                   </div>
                   <span className="text-[10px] text-stone-400 block mt-1">
@@ -659,11 +699,11 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                     Specialties
                   </span>
                   <div className="mt-1.5 flex items-baseline space-x-1">
-                    <span className="text-2xl font-black text-stone-900">3</span>
+                    <span className="text-2xl font-black text-stone-900">{docSnapshot.specialtiesCount}</span>
                     <span className="text-xs font-semibold text-stone-500">domains</span>
                   </div>
-                  <span className="text-[10px] text-stone-400 block mt-1">
-                    Medicine, Neuro, ENT
+                  <span className="text-[10px] text-stone-400 block mt-1 truncate">
+                    {docSnapshot.specialties.slice(0, 3).join(', ') || 'General Medicine'}
                   </span>
                 </div>
 
@@ -673,14 +713,21 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                     DPS
                   </span>
                   <div className="mt-1.5 flex items-baseline space-x-1.5">
-                    <span className="text-2xl font-black text-stone-900">63</span>
+                    <span className="text-2xl font-black text-stone-900">{docSnapshot.currentDps}</span>
                     <span className="text-xs font-semibold text-stone-400">/ 100</span>
                   </div>
-                  {/* Under DPS: ↓ Stagnating (subtle amber indicator) */}
-                  <div className="mt-1 flex items-center space-x-1 text-amber-800">
-                    <span className="text-xs font-bold">↓</span>
-                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800">
-                      Stagnating
+                  <div className="mt-1 flex items-center space-x-1">
+                    {docSnapshot.dpsTrend === 'improving' || docSnapshot.dpsTrend === 'recovering' ? (
+                      <span className="text-xs font-bold text-emerald-700">↑</span>
+                    ) : (
+                      <span className="text-xs font-bold text-amber-700">↓</span>
+                    )}
+                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${
+                      docSnapshot.dpsTrend === 'improving' || docSnapshot.dpsTrend === 'recovering'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}>
+                      {docSnapshot.dpsTrendFormatted}
                     </span>
                   </div>
                 </div>
@@ -696,21 +743,52 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                 <div className="lg:col-span-7 space-y-5">
                   
                   {/* 1. PRIMARY INSIGHT CARD */}
-                  <div className="bg-white rounded-2xl p-5 border border-amber-300/80 shadow-2xs relative overflow-hidden">
+                  <div className={`bg-white rounded-2xl p-5 border shadow-2xs relative overflow-hidden ${
+                    docSnapshot.stagnationFlag
+                      ? 'border-amber-300/80 bg-amber-50/20'
+                      : docSnapshot.stagnationState === 'RECOVERING'
+                      ? 'border-emerald-300/80 bg-emerald-50/20'
+                      : 'border-stone-200/80'
+                  }`}>
                     <div className="flex items-start space-x-3.5">
-                      <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-900 shrink-0 mt-0.5">
-                        <AlertTriangle className="w-5 h-5 text-amber-700" />
+                      <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 ${
+                        docSnapshot.stagnationFlag
+                          ? 'bg-amber-100 border-amber-300 text-amber-900'
+                          : docSnapshot.stagnationState === 'RECOVERING'
+                          ? 'bg-emerald-100 border-emerald-300 text-emerald-900'
+                          : 'bg-stone-100 border-stone-300 text-stone-800'
+                      }`}>
+                        {docSnapshot.stagnationFlag ? (
+                          <AlertTriangle className="w-5 h-5 text-amber-700" />
+                        ) : docSnapshot.stagnationState === 'RECOVERING' ? (
+                          <TrendingUp className="w-5 h-5 text-emerald-700" />
+                        ) : (
+                          <CheckCircle2 className="w-5 h-5 text-stone-600" />
+                        )}
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 flex-1">
                         <h3 className="text-base font-extrabold text-stone-900 tracking-tight">
-                          Potential diagnostic journey stagnation
+                          {docSnapshot.stagnationFlag
+                            ? SAFETY_MANDATE.STAGNATION_TITLE
+                            : docSnapshot.stagnationState === 'RECOVERING'
+                            ? 'Post-Referral Trajectory Recovery Detected'
+                            : docSnapshot.stagnationState === 'CONVERGING'
+                            ? 'Diagnostic Journey Converging Normally'
+                            : 'Diagnostic Journey Under Active Monitoring'}
                         </h3>
                         <p className="text-xs text-stone-600 leading-relaxed">
-                          The recent diagnostic trajectory shows limited measurable convergence.
+                          {docSnapshot.stagnationReason}
                         </p>
-                        <div className="pt-1">
-                          <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">
-                            <span>Clinical review recommended.</span>
+                        <div className="pt-1 flex items-center space-x-2">
+                          <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                            docSnapshot.stagnationFlag
+                              ? 'bg-amber-50 text-amber-900 border-amber-200'
+                              : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                          }`}>
+                            <span>{docSnapshot.stagnationFlag ? 'Clinical review recommended.' : 'Trajectory on track.'}</span>
+                          </span>
+                          <span className="text-[11px] text-stone-400 font-mono">
+                            Slope: {docSnapshot.dpsSlope > 0 ? '+' : ''}{docSnapshot.dpsSlope} pts/visit
                           </span>
                         </div>
                       </div>
@@ -723,7 +801,7 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                       <div className="flex items-center space-x-2">
                         <ShieldAlert className="w-4 h-4 text-stone-700 shrink-0" />
                         <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
-                          Why This Is Flagged
+                          Why Review Is Recommended
                         </h4>
                       </div>
                       <span className="text-[11px] text-stone-400 font-medium">
@@ -736,38 +814,57 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
                         <span className="text-stone-600 font-medium">Repeated complaint</span>
                         <strong className="text-stone-900 font-bold bg-white px-2 py-0.5 rounded border border-stone-200">
-                          5 encounters
+                          {docSnapshot.repeatedComplaintCount >= 2 ? `${docSnapshot.repeatedComplaintCount} encounters` : 'None detected'}
                         </strong>
                       </div>
 
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
                         <span className="text-stone-600 font-medium">Specialist transitions</span>
                         <strong className="text-stone-900 font-bold bg-white px-2 py-0.5 rounded border border-stone-200">
-                          3
+                          {docSnapshot.specialtiesCount} {docSnapshot.specialtiesCount === 1 ? 'specialty' : 'specialties'}
                         </strong>
                       </div>
 
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
                         <span className="text-stone-600 font-medium">Repeated investigations</span>
-                        <strong className="text-amber-900 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                          2 (Repeat MRI)
+                        <strong className={`font-bold px-2 py-0.5 rounded border ${
+                          docSnapshot.investigationRedundancyCount > 0
+                            ? 'text-amber-900 bg-amber-50 border-amber-200'
+                            : 'text-stone-800 bg-white border-stone-200'
+                        }`}>
+                          {docSnapshot.investigationRedundancyCount > 0 ? docSnapshot.investigationRedundancySummary : 'None detected'}
                         </strong>
                       </div>
 
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
-                        <span className="text-stone-600 font-medium">Clinical uncertainty</span>
-                        <strong className="text-amber-900 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                          Elevated
+                        <span className="text-stone-600 font-medium">Clinical note uncertainty</span>
+                        <strong className={`font-bold px-2 py-0.5 rounded border ${
+                          docSnapshot.topSignals.find(s => s.title.includes('Uncertainty'))?.severity === 'critical' || docSnapshot.topSignals.find(s => s.title.includes('Uncertainty'))?.severity === 'high'
+                            ? 'text-amber-900 bg-amber-50 border-amber-200'
+                            : 'text-stone-800 bg-white border-stone-200'
+                        }`}>
+                          {docSnapshot.topSignals.find(s => s.title.includes('Uncertainty'))?.metric || 'Low ambiguity'}
                         </strong>
                       </div>
 
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between sm:col-span-2">
-                        <span className="text-stone-600 font-medium">DPS trend</span>
+                        <span className="text-stone-600 font-medium">DPS velocity trend</span>
                         <strong className="text-stone-900 font-bold bg-white px-2 py-0.5 rounded border border-stone-200">
-                          Flat (64 → 63 → 63)
+                          {docSnapshot.dpsTrendFormatted} (Current: {docSnapshot.currentDps}/100)
                         </strong>
                       </div>
 
+                    </div>
+
+                    {/* Contributing Bullet Breakdown */}
+                    <div className="mt-3 pt-3 border-t border-stone-100 space-y-1.5 text-xs text-stone-600">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 block">Contributing Process Evidence:</span>
+                      {docSnapshot.explainability.map((item, idx) => (
+                        <div key={idx} className="flex items-start space-x-2">
+                          <span className="text-stone-400 font-bold">•</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -844,12 +941,16 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                         <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-900">
                           DPS Trajectory
                         </h4>
-                        <span className="text-xs font-bold text-amber-800">
-                          Recent progress is flat
+                        <span className={`text-xs font-bold ${
+                          docSnapshot.dpsTrend === 'improving' || docSnapshot.dpsTrend === 'recovering'
+                            ? 'text-emerald-800'
+                            : 'text-amber-800'
+                        }`}>
+                          {docSnapshot.dpsTrendFormatted}
                         </span>
                       </div>
                       <span className="text-[11px] text-stone-400 font-mono">
-                        Threshold: 70
+                        Target: 70
                       </span>
                     </div>
 
@@ -872,9 +973,9 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                                 {node.score}
                               </span>
                               <div className={`w-3 h-3 rounded-full border-2 my-1.5 ${
-                                i >= 4
-                                  ? 'bg-amber-500 border-amber-600'
-                                  : 'bg-stone-800 border-white'
+                                docSnapshot.stagnationFlag
+                                  ? (i >= dpsTrajectory.length - 2 ? 'bg-amber-500 border-amber-600' : 'bg-stone-800 border-white')
+                                  : 'bg-emerald-600 border-white'
                               }`}></div>
                               <span className="text-[10px] text-stone-400 font-medium">
                                 {node.label}
@@ -885,8 +986,10 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] text-stone-500 mt-2 px-1">
-                        <span>71 → 69 → 65 → 64 → 63 → 63</span>
-                        <span className="text-amber-800 font-semibold">• Flagged for stagnation review</span>
+                        <span>{dpsTrajectory.map(n => n.score).join(' → ')}</span>
+                        <span className={docSnapshot.stagnationFlag ? 'text-amber-800 font-semibold' : 'text-emerald-800 font-semibold'}>
+                          {docSnapshot.stagnationFlag ? '• Flagged for stagnation review' : docSnapshot.stagnationState === 'RECOVERING' ? '• Post-referral recovery' : '• Trajectory converging'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -919,7 +1022,7 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
 
                       <div className="flex justify-between items-center p-2.5 rounded-xl bg-stone-50 border border-stone-200">
                         <span className="text-stone-600 font-medium">Patients ahead</span>
-                        <strong className="font-mono font-bold text-stone-900">2</strong>
+                        <strong className="font-mono font-bold text-stone-900">{token.queuePosition > 1 ? token.queuePosition - 1 : 0}</strong>
                       </div>
 
                       <div className="flex justify-between items-center p-2.5 rounded-xl bg-stone-50 border border-stone-200">
@@ -928,8 +1031,10 @@ export const PreConsultationSnapshotModal: React.FC<PreConsultationSnapshotModal
                       </div>
 
                       <div className="flex justify-between items-center p-2.5 rounded-xl bg-amber-50/80 border border-amber-200">
-                        <span className="text-amber-950 font-medium">Current recommended allocation</span>
-                        <span className="font-mono font-extrabold text-amber-950">15 min</span>
+                        <span className="text-amber-950 font-medium">Recommended allocation</span>
+                        <span className="font-mono font-extrabold text-amber-950">
+                          {docSnapshot.stagnationFlag ? '15 min (+5m buffer)' : '10 min (standard)'}
+                        </span>
                       </div>
 
                       {/* Operational Queue Action */}

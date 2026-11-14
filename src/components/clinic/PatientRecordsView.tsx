@@ -74,12 +74,25 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
     return allPatients.find(p => p.id === activePatientId) || allPatients[0];
   }, [allPatients, activePatientId]);
 
+  // Retrieve patient clinical data & compute dynamic DPS Snapshot & Trajectory
+  const visits = useMemo(() => DataStore.getVisits(patient.id), [patient.id]);
+  const events = useMemo(() => DataStore.getDiagnosticEvents(patient.id), [patient.id]);
+  const symptoms = useMemo(() => DataStore.getSymptoms(patient.id), [patient.id]);
+
+  const docSnapshot = useMemo(() => {
+    return DpsEngine.generateDoctorSnapshot(patient, visits, events, symptoms);
+  }, [patient, visits, events, symptoms]);
+
+  const trajectory = useMemo(() => {
+    return DpsEngine.computeTrajectory(patient, visits, events, symptoms);
+  }, [patient, visits, events, symptoms]);
+
   // Retrieve current active queue token
   const currentToken = useMemo(() => {
     const liveQueue = queue || DataStore.getQueue();
     return liveQueue.find(t => t.patientId === patient.id) || {
-      id: 'tok_aarav_27',
-      tokenNumber: 'A-27',
+      id: `tok_${patient.id}`,
+      tokenNumber: patient.id === 'pat_aarav_0' ? 'A-27' : 'A-101',
       patientId: patient.id,
       patientName: patient.fullName,
       patientAge: patient.age || 42,
@@ -91,12 +104,12 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
       sanctuary_state: 'QUEUE_STABLE',
       queuePosition: 2,
       estimatedWaitTime: 12,
-      dpsScore: 63,
-      stagnationFlag: true,
+      dpsScore: docSnapshot.currentDps,
+      stagnationFlag: docSnapshot.stagnationFlag,
       roomNumber: '101',
-      symptomsSummary: 'Persistent headache',
+      symptomsSummary: patient.activeJourneySummary || 'Clinical evaluation',
     } as unknown as Token;
-  }, [patient, queue]);
+  }, [patient, queue, docSnapshot]);
 
   const handleSelectPatient = (id: string) => {
     setActivePatientId(id);
@@ -304,7 +317,7 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
                       Journey Duration
                     </span>
                     <span className="font-mono font-extrabold text-stone-900 text-xs sm:text-sm">
-                      7 months
+                      {docSnapshot.journeyDurationFormatted.split(' ')[0]} {docSnapshot.journeyDurationFormatted.split(' ')[1] || 'months'}
                     </span>
                   </div>
 
@@ -315,7 +328,7 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
                       Encounters
                     </span>
                     <span className="font-mono font-extrabold text-stone-900 text-xs sm:text-sm">
-                      6
+                      {docSnapshot.encounterCount}
                     </span>
                   </div>
 
@@ -326,34 +339,48 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
                       Specialties
                     </span>
                     <span className="font-mono font-extrabold text-stone-900 text-xs sm:text-sm">
-                      3
+                      {docSnapshot.specialtiesCount}
                     </span>
                   </div>
                 </div>
 
                 {/* Primary Visual Anchor: Diagnostic Progress Score (DPS) + Trend */}
-                <div className="bg-amber-50/70 border border-amber-300 p-2.5 sm:p-3.5 rounded-2xl flex items-center space-x-3 sm:space-x-4 shadow-2xs">
+                <div className={`border p-2.5 sm:p-3.5 rounded-2xl flex items-center space-x-3 sm:space-x-4 shadow-2xs ${
+                  docSnapshot.stagnationFlag
+                    ? 'bg-amber-50/70 border-amber-300'
+                    : docSnapshot.stagnationState === 'RECOVERING'
+                    ? 'bg-emerald-50/70 border-emerald-300'
+                    : 'bg-stone-50 border-stone-200'
+                }`}>
                   <div>
-                    <span className="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider block">
+                    <span className="text-[10px] font-extrabold text-stone-600 uppercase tracking-wider block">
                       Diagnostic Progress Score
                     </span>
                     <div className="flex items-baseline space-x-1.5 mt-0.5">
-                      <span className="text-xl sm:text-2xl font-mono font-black text-amber-950">
-                        63
+                      <span className="text-xl sm:text-2xl font-mono font-black text-stone-900">
+                        {docSnapshot.currentDps}
                       </span>
-                      <span className="text-xs font-mono font-bold text-amber-800">
+                      <span className="text-xs font-mono font-bold text-stone-400">
                         / 100
                       </span>
                     </div>
                   </div>
 
-                  <div className="pl-2.5 sm:pl-3 border-l border-amber-200">
-                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                  <div className="pl-2.5 sm:pl-3 border-l border-stone-200">
+                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
                       Trend
                     </span>
-                    <span className="inline-flex items-center space-x-1 text-xs font-extrabold text-amber-900 mt-0.5 bg-amber-100 px-2 py-0.5 rounded-md">
-                      <TrendingDown className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Stagnating</span>
+                    <span className={`inline-flex items-center space-x-1 text-xs font-extrabold mt-0.5 px-2 py-0.5 rounded-md ${
+                      docSnapshot.dpsTrend === 'improving' || docSnapshot.dpsTrend === 'recovering'
+                        ? 'bg-emerald-100 text-emerald-900'
+                        : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {docSnapshot.dpsTrend === 'improving' || docSnapshot.dpsTrend === 'recovering' ? (
+                        <span>↑</span>
+                      ) : (
+                        <TrendingDown className="w-3.5 h-3.5 text-amber-700" />
+                      )}
+                      <span>{docSnapshot.dpsTrendFormatted}</span>
                     </span>
                   </div>
                 </div>
@@ -372,8 +399,17 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
               
               {/* DPS Chart */}
               <DpsTrendChart
-                currentDps={63}
-                trendLabel="Stagnating"
+                currentDps={docSnapshot.currentDps}
+                trendLabel={docSnapshot.dpsTrendFormatted}
+                points={trajectory.length > 0 ? trajectory.map(n => ({
+                  encounter: n.encounterNumber,
+                  label: `Enc ${n.encounterNumber}`,
+                  date: n.date,
+                  specialty: n.specialty,
+                  dps: n.dpsScore,
+                  note: n.milestone || n.hypothesis || n.complaint,
+                  isStagnantZone: n.isStagnant,
+                })) : undefined}
                 onPointClick={(idx) => {
                   console.log('Encounter point clicked', idx);
                 }}
@@ -381,23 +417,44 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
 
               {/* Journey Timeline */}
               <JourneyTimeline
+                encounters={trajectory.length > 0 ? trajectory.map(n => ({
+                  id: n.visitId,
+                  monthYear: n.date,
+                  isCurrent: n.encounterNumber === trajectory.length,
+                  specialty: n.specialty,
+                  doctor: n.doctorName,
+                  facility: n.facility,
+                  chiefComplaint: n.complaint,
+                  investigations: n.testsOrdered.map(t => ({
+                    name: t,
+                    isRepeated: n.redundantTestsFound?.some(r => r.toLowerCase().includes(t.toLowerCase())),
+                    conclusive: n.delta > 5,
+                    findingsSummary: n.notes || 'Diagnostic workup completed.',
+                  })),
+                  recordedHypothesis: n.hypothesis,
+                  treatmentOutcome: n.treatmentPlan,
+                  noteSummary: n.notes,
+                  convergenceState: n.isStagnant ? 'stagnant' : n.delta > 5 ? 'transition' : 'uncertain',
+                  convergenceLabel: n.milestone || (n.isStagnant ? 'Limited convergence' : 'Active workup'),
+                  dpsScore: n.dpsScore,
+                })) : undefined}
                 onSelectInvestigation={(inv) => {
                   setActiveInvestigationModal({
                     name: inv.name,
                     findingsSummary: inv.findingsSummary,
                     isRepeated: inv.isRepeated,
-                    date: 'March 2026',
-                    doctor: 'Dr. Priya Desai',
-                    facility: 'Metro Imaging Labs',
+                    date: 'Diagnostic Record',
+                    doctor: 'Specialist Staff',
+                    facility: 'Odyssey Health Labs',
                   });
                 }}
                 onSelectReferral={(specialty) => {
                   setActiveReferralModal({
                     specialty,
                     status: specialty === 'Multidisciplinary Review' ? 'Recommended' : 'Completed',
-                    date: 'Feb / Mar 2026',
-                    doctor: specialty === 'Neurology' ? 'Dr. Priya Desai' : 'Dr. R. K. Gupta',
-                    notes: 'Referral triggered due to persistent occipital headaches unresponsive to first-line pharmacotherapy.',
+                    date: 'Referral Record',
+                    doctor: 'Clinical Diagnostic Panel',
+                    notes: 'Specialist transition initiated to break diagnostic circularity.',
                   });
                 }}
               />
@@ -413,6 +470,10 @@ export const PatientRecordsView: React.FC<PatientRecordsViewProps> = ({
                 onCreateReferral={() => setIsReferralModalOpen(true)}
                 onPrepareSnapshot={handleSnapshot}
                 onEscalateMDT={handleEscalateMDT}
+                explainability={docSnapshot.explainability}
+                concern={patient.activeJourneySummary || currentToken.symptomsSummary || 'Persistent concern'}
+                specialist={currentToken.specialty || 'General Medicine'}
+                isStagnant={docSnapshot.stagnationFlag}
                 onSelectReferral={(specialty) => {
                   setActiveReferralModal({
                     specialty,
